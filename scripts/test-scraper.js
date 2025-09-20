@@ -1,6 +1,6 @@
 // Test script to manually run the scraper and populate database
 require('dotenv').config();
-const TexasLegislatureScraper = require('../services/scraper');
+const { TexasLegislatureScraper } = require('../services/scraper');
 const { databaseService } = require('../config/database');
 const { billDatabase } = require('../config/bill-database');
 

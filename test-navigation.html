@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Test - AWARE TEXAS</title>
+    <link href="frontend/styles/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation Header with AWARE TEXAS Branding -->
+    <header class="navigation-header">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="texas-flag-icon"></span>
+                <span class="brand-text">AWARE TEXAS</span>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <nav class="nav-links">
+                <a href="#" class="nav-link">Home</a>
+                <a href="#" class="nav-link">About Us</a>
+            </nav>
+            
+            <!-- Mobile Navigation Button -->
+            <button class="mobile-nav-button" id="mobile-nav-toggle" 
+                    aria-label="Toggle navigation menu" 
+                    aria-expanded="false" 
+                    aria-controls="mobile-nav-menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Mobile Navigation Menu -->
+        <div class="mobile-nav-menu hidden" id="mobile-nav-menu" aria-hidden="true">
+            <nav class="mobile-nav-links" role="navigation" aria-label="Mobile navigation">
+                <a href="#" class="mobile-nav-link">Home</a>
+                <a href="#" class="mobile-nav-link">About Us</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Navigation Test</h1>
+        <p class="text-gray-700 mb-4">This page tests the AWARE TEXAS navigation header implementation.</p>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h2 class="text-xl font-semibold mb-4">Test Instructions:</h2>
+            <ul class="list-disc list-inside space-y-2 text-gray-700">
+                <li>On desktop (≥640px): Navigation links should be visible, mobile button hidden</li>
+                <li>On mobile (<640px): Navigation links hidden, mobile button visible</li>
+                <li>Click mobile button to toggle menu</li>
+                <li>Menu should close when clicking outside or pressing Escape</li>
+                <li>Texas flag icon should display red, white, and blue stripes</li>
+                <li>AWARE TEXAS branding should be prominent and properly sized</li>
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        // Mobile Navigation Handler for AWARE TEXAS Header
+        class MobileNavigation {
+            constructor() {
+                this.mobileNavToggle = document.getElementById('mobile-nav-toggle');
+                this.mobileNavMenu = document.getElementById('mobile-nav-menu');
+                this.isOpen = false;
+                
+                this.bindEvents();
+            }
+            
+            bindEvents() {
+                if (this.mobileNavToggle && this.mobileNavMenu) {
+                    this.mobileNavToggle.addEventListener('click', () => {
+                        this.toggleMenu();
+                    });
+                    
+                    // Close menu when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (this.isOpen && 
+                            !this.mobileNavMenu.contains(e.target) && 
+                            !this.mobileNavToggle.contains(e.target)) {
+                            this.closeMenu();
+                        }
+                    });
+                    
+                    // Close menu on escape key
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape' && this.isOpen) {
+                            this.closeMenu();
+                        }
+                    });
+                    
+                    // Close menu when window is resized to desktop size
+                    window.addEventListener('resize', () => {
+                        if (window.innerWidth >= 640 && this.isOpen) { // sm breakpoint
+                            this.closeMenu();
+                        }
+                    });
+                }
+            }
+            
+            toggleMenu() {
+                if (this.isOpen) {
+                    this.closeMenu();
+                } else {
+                    this.openMenu();
+                }
+            }
+            
+            openMenu() {
+                this.isOpen = true;
+                this.mobileNavMenu.classList.remove('hidden');
+                this.mobileNavMenu.classList.add('visible');
+                
+                // Update button icon to X
+                this.mobileNavToggle.innerHTML = `
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                `;
+                
+                // Update ARIA attributes
+                this.mobileNavToggle.setAttribute('aria-expanded', 'true');
+                this.mobileNavMenu.setAttribute('aria-hidden', 'false');
+            }
+            
+            closeMenu() {
+                this.isOpen = false;
+                this.mobileNavMenu.classList.remove('visible');
+                this.mobileNavMenu.classList.add('hidden');
+                
+                // Update button icon to hamburger
+                this.mobileNavToggle.innerHTML = `
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                `;
+                
+                // Update ARIA attributes
+                this.mobileNavToggle.setAttribute('aria-expanded', 'false');
+                this.mobileNavMenu.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        // Initialize mobile navigation when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new MobileNavigation();
+        });
+    </script>
+</body>
+</html>

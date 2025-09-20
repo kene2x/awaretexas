@@ -8,101 +8,113 @@
 </head>
 <body class="bg-gray-50">
     <div id="app">
-        <!-- Enhanced Navigation Header -->
-        <header class="texas-header">
-            <div class="container-responsive">
-                <div class="flex items-center justify-between py-4 sm:py-6">
-                    <div class="flex items-center space-x-3 sm:space-x-4">
-                        <a href="index.html" class="text-white hover:text-blue-200 transition-colors focus-texas rounded-md p-1" aria-label="Back to bills list">
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                        </a>
-                        <h1 class="heading-primary text-white text-lg sm:text-xl lg:text-2xl">
-                            Texas Senate Bill Tracker
-                        </h1>
-                    </div>
-                    
-                    <!-- Enhanced Texas Flag Accent -->
-                    <div class="texas-flag-accent">
-                        <div class="texas-flag-stripe bg-texas-red rounded-sm"></div>
-                        <div class="texas-flag-stripe bg-white rounded-sm"></div>
-                        <div class="texas-flag-stripe bg-texas-blue rounded-sm"></div>
-                        <span class="hidden sm:block text-xs text-blue-100 ml-2 font-medium">
-                            Bill Details
-                        </span>
-                    </div>
+        <!-- Navigation Header with AWARE TEXAS Branding -->
+        <header class="navigation-header">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <a href="index.html" class="nav-brand-link" aria-label="Back to bills list">
+                        <svg class="w-5 h-5 text-texas-blue mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <span class="texas-flag-icon"></span>
+                    <span class="brand-text">AWARE TEXAS</span>
                 </div>
+                
+                <!-- Desktop Navigation -->
+                <nav class="nav-links">
+                    <a href="index.html" class="nav-link">Home</a>
+                    <a href="#" class="nav-link">About Us</a>
+                    <span class="nav-breadcrumb">Bill Details</span>
+                </nav>
+                
+                <!-- Mobile Navigation Button -->
+                <button class="mobile-nav-button" id="mobile-nav-toggle" 
+                        aria-label="Toggle navigation menu" 
+                        aria-expanded="false" 
+                        aria-controls="mobile-nav-menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Mobile Navigation Menu -->
+            <div class="mobile-nav-menu hidden" id="mobile-nav-menu" aria-hidden="true">
+                <nav class="mobile-nav-links" role="navigation" aria-label="Mobile navigation">
+                    <a href="index.html" class="mobile-nav-link">Home</a>
+                    <a href="#" class="mobile-nav-link">About Us</a>
+                </nav>
             </div>
         </header>
         
-        <main class="container-responsive py-6 sm:py-8">
-            <!-- Enhanced Loading State -->
-            <div id="loading" class="text-center py-12 sm:py-16">
-                <div class="inline-flex items-center px-4 py-3 font-semibold leading-6 text-responsive-sm shadow-lg rounded-lg text-texas-blue bg-white border border-gray-200 animate-fade-in">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-texas-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+        <main class="main-content">
+            <!-- Enhanced Loading State with Texas Theme -->
+            <div id="loading" class="loading-state">
+                <div class="loading-card">
+                    <svg class="loading-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Loading bill details...
+                    <span class="loading-text">Loading bill details...</span>
                 </div>
             </div>
 
-            <!-- Enhanced Bill Detail Content -->
-            <div id="bill-detail-content" class="hidden animate-fade-in-up">
+            <!-- Bill Detail Content with Texas Theme -->
+            <div id="bill-detail-content" class="bill-detail-container hidden">
                 <!-- Bill Header Component -->
-                <div id="bill-header" class="card-texas card-padding mb-6 sm:mb-8">
+                <div id="bill-header" class="bill-detail-card bill-header-card">
                     <!-- Content will be populated by JavaScript -->
                 </div>
 
-                <!-- Enhanced Main Content Grid -->
-                <div class="detail-grid">
+                <!-- Main Content Grid -->
+                <div class="bill-detail-grid">
                     <!-- Left Column - Main Content -->
-                    <div class="lg:col-span-2 space-y-responsive">
+                    <div class="bill-detail-main">
                         <!-- Summary Section Component -->
-                        <div id="summary-section" class="card-texas card-padding">
+                        <div id="summary-section" class="bill-detail-card summary-card">
                             <!-- Content will be populated by JavaScript -->
                         </div>
 
                         <!-- News Section Component -->
-                        <div id="news-section" class="card-texas card-padding">
+                        <div id="news-section" class="bill-detail-card news-card">
                             <!-- Content will be populated by JavaScript -->
                         </div>
                     </div>
 
                     <!-- Right Column - Sidebar -->
-                    <div class="space-y-responsive">
+                    <div class="bill-detail-sidebar">
                         <!-- Sponsor Info Component -->
-                        <div id="sponsor-info" class="card-texas card-padding">
+                        <div id="sponsor-info" class="bill-detail-card sponsor-card">
                             <!-- Content will be populated by JavaScript -->
                         </div>
 
                         <!-- Official Link Component -->
-                        <div id="official-link" class="card-texas card-padding">
+                        <div id="official-link" class="bill-detail-card official-link-card">
                             <!-- Content will be populated by JavaScript -->
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Error State -->
-            <div id="error-state" class="hidden text-center py-12">
-                <div class="max-w-lg mx-auto">
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <svg class="mx-auto h-16 w-16 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <!-- Error State with Texas Theme -->
+            <div id="error-state" class="error-state hidden">
+                <div class="error-container">
+                    <div class="error-card">
+                        <svg class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                         </svg>
-                        <h3 class="text-lg font-semibold text-red-800 mb-2">Unable to Load Bill Details</h3>
-                        <p id="error-message" class="text-sm text-red-600 mb-6 leading-relaxed">Failed to load bill details. Please try again later.</p>
+                        <h3 class="error-title">Unable to Load Bill Details</h3>
+                        <p id="error-message" class="error-message">Failed to load bill details. Please try again later.</p>
                         
-                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                            <button onclick="window.billDetailApp.loadBillDetails()" class="px-6 py-2 bg-texas-blue text-white rounded-md hover:bg-texas-blue-700 transition-colors font-medium">
+                        <div class="error-actions">
+                            <button onclick="window.billDetailApp.loadBillDetails()" class="btn-texas-primary">
                                 <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                 </svg>
                                 Retry Loading
                             </button>
-                            <a href="index.html" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium">
+                            <a href="index.html" class="btn-secondary">
                                 Back to Bills
                             </a>
                         </div>

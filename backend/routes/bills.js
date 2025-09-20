@@ -283,6 +283,70 @@ router.post('/summary/:billId', cacheMiddleware.summaryMiddleware(), asyncHandle
 }));
 
 /**
+ * GET /api/bills/:billId/voting
+ * Get voting data for a specific bill
+ */
+router.get('/:billId/voting', cacheMiddleware.middleware(1800), asyncHandler(async (req, res) => { // Cache for 30 minutes
+  const { billId } = req.params;
+  
+  if (!billId) {
+    throw new AppError('Bill ID is required', 'VALIDATION_ERROR');
+  }
+  
+  try {
+    // Import scraper service
+    const { TexasLegislatureScraper } = require('../../services/scraper');
+    const scraper = new TexasLegislatureScraper();
+    
+    // Use the ID standardizer to handle different formats
+    const { idStandardizer } = require('../../config/id-standardizer');
+    const lookupVariants = idStandardizer.generateLookupVariants(billId);
+    
+    let votingData = null;
+    
+    // Try each variant until we find voting data
+    for (const variant of lookupVariants) {
+      try {
+        console.log(`🗳️ Attempting to scrape voting data for variant: ${variant}`);
+        votingData = await scraper.scrapeVotingData(variant);
+        
+        if (votingData && (votingData.votes.length > 0 || votingData.summary)) {
+          console.log(`✅ Found voting data using variant: ${variant}`);
+          break;
+        }
+      } catch (scrapeError) {
+        console.warn(`Failed to scrape voting data for variant ${variant}:`, scrapeError.message);
+      }
+    }
+    
+    // If no voting data found, return 404 so frontend can hide the section
+    if (!votingData || (votingData.votes.length === 0 && !votingData.summary)) {
+      return res.status(404).json({
+        success: false,
+        message: 'No voting data available for this bill',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: votingData,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error(`Error fetching voting data for bill ${billId}:`, error.message);
+    
+    // Return 404 on error so frontend hides the section
+    res.status(404).json({
+      success: false,
+      message: 'Voting data not available',
+      timestamp: new Date().toISOString()
+    });
+  }
+}));
+
+/**
  * PUT /api/bills/:billId
  * Update a specific bill (including voting data)
  */

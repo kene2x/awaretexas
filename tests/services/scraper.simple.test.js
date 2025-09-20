@@ -1,4 +1,4 @@
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 
 describe('TexasLegislatureScraper - Core Functionality', () => {
   let scraper;

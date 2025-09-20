@@ -11,7 +11,7 @@ const mockCheerio = {
 
 jest.mock('cheerio', () => mockCheerio);
 
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 
 describe('TexasLegislatureScraper', () => {
   let scraper;

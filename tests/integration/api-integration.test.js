@@ -4,7 +4,7 @@ const app = require('../../backend/server');
 const { databaseService } = require('../../config/database');
 const { summaryService } = require('../../services/ai-summary');
 const { newsService } = require('../../services/news');
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 
 // Mock external services for integration testing
 jest.mock('../../config/database');

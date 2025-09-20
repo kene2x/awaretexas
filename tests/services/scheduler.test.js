@@ -1,5 +1,5 @@
 const { ScrapingScheduler, ScrapingLogger } = require('../../services/scheduler');
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 const { billDatabase } = require('../../config/bill-database');
 const { databaseService } = require('../../config/database');
 

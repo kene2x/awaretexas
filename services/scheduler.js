@@ -1,5 +1,5 @@
 const cron = require('node-cron');
-const TexasLegislatureScraper = require('./scraper');
+const { TexasLegislatureScraper } = require('./scraper');
 const { billDatabase } = require('../config/bill-database');
 const { databaseService } = require('../config/database');
 

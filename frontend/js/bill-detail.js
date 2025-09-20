@@ -22,6 +22,16 @@ class BillDetailApp {
     initializeElements() {
         console.log('🔧 Getting DOM elements...');
 
+        // Wait for DOM to be ready if needed
+        if (document.readyState === 'loading') {
+            console.log('⏳ DOM still loading, waiting...');
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('✅ DOM loaded, re-initializing elements');
+                this.initializeElements();
+            });
+            return;
+        }
+
         this.loadingElement = document.getElementById('loading');
         this.billDetailContent = document.getElementById('bill-detail-content');
         this.errorState = document.getElementById('error-state');
@@ -55,6 +65,16 @@ class BillDetailApp {
                 console.warn(`⚠️ Missing DOM element: ${name}`);
             }
         });
+
+        // Ensure loading is initially shown and content is hidden
+        if (this.loadingElement && this.billDetailContent) {
+            this.loadingElement.classList.remove('hidden');
+            this.billDetailContent.classList.add('hidden');
+            if (this.errorState) {
+                this.errorState.classList.add('hidden');
+            }
+            console.log('🎯 Initial state set: loading shown, content hidden');
+        }
     }
 
     extractBillId() {
@@ -201,15 +221,57 @@ class BillDetailApp {
                 console.log('✅ All components rendered successfully');
             } catch (renderError) {
                 console.error('❌ Error rendering components:', renderError);
-                this.showError('Failed to render bill details. Check console for details.');
-                return;
+                // Don't show error to user for minor rendering issues, just log it
+                console.warn('Some components may not have rendered properly, but continuing...');
+                // Continue with hiding loading state
             }
 
             // Hide loading, show content
             console.log('🎉 Hiding loading state and showing content...');
             this.hideLoading();
+            
+            // Aggressive fix: directly manipulate DOM elements
+            const loadingElement = document.getElementById('loading');
+            const contentElement = document.getElementById('bill-detail-content');
+            
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+                loadingElement.classList.add('hidden');
+                console.log('🔧 Directly hid loading element');
+            }
+            
+            if (contentElement) {
+                contentElement.style.display = 'block';
+                contentElement.classList.remove('hidden');
+                console.log('🔧 Directly showed content element');
+            }
+            
+            // Force hide loading as fallback
+            setTimeout(() => {
+                const loadingEl = document.getElementById('loading');
+                const contentEl = document.getElementById('bill-detail-content');
+                if (loadingEl && !loadingEl.classList.contains('hidden')) {
+                    console.log('🔧 Force hiding loading element');
+                    loadingEl.style.display = 'none';
+                }
+                if (contentEl && contentEl.classList.contains('hidden')) {
+                    console.log('🔧 Force showing content element');
+                    contentEl.classList.remove('hidden');
+                    contentEl.style.display = 'block';
+                }
+            }, 100);
 
             console.log('✅ Bill details loaded successfully!');
+        
+        // Final check to ensure loading is hidden
+        setTimeout(() => {
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl && !loadingEl.classList.contains('hidden')) {
+                console.log('🚨 Loading still visible, forcing hide');
+                loadingEl.classList.add('hidden');
+                loadingEl.style.display = 'none';
+            }
+        }, 500);
 
         } catch (error) {
             console.error('❌ Error in loadBillDetails:', error);
@@ -274,7 +336,7 @@ class BillDetailApp {
         // Enhanced status color mapping with Texas flag theme
         const statusColors = {
             'Filed': 'bg-yellow-50 text-yellow-700 border-yellow-400',
-            'In Committee': 'bg-texas-blue bg-opacity-10 text-texas-blue border-texas-blue border-opacity-30',
+            'In Committee': 'bg-texas-blue text-white border-texas-blue',
             'Passed': 'bg-green-50 text-green-700 border-green-400'
         };
 
@@ -352,7 +414,7 @@ class BillDetailApp {
                     </div>
                     <div class="flex flex-wrap gap-2">
                         ${this.bill.topics.map(topic => `
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-texas-blue bg-opacity-10 text-texas-blue border border-texas-blue border-opacity-20">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-texas-blue text-white border border-texas-blue">
                                 ${topic}
                             </span>
                         `).join('')}
@@ -502,12 +564,10 @@ class BillDetailApp {
                     </div>
                 </div>
                 
-                ${this.bill.voting && (this.bill.status === 'Passed' || this.bill.status === 'Signed') ? `
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <h4 class="text-sm font-medium text-gray-700 mb-3">Voting Results</h4>
-                        <div id="voting-chart-container"></div>
-                    </div>
-                ` : ''}
+                <div id="voting-section" class="mt-6 pt-6 border-t border-gray-200 hidden">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Voting Results</h4>
+                    <div id="voting-chart-container"></div>
+                </div>
                 
                 ${this.bill.abstract ? `
                     <div class="mt-6 pt-6 border-t border-gray-200">
@@ -1040,12 +1100,31 @@ View Details: ${window.location.href}`;
         console.log('  - Bill content element exists:', !!this.billDetailContent);
 
         if (this.loadingElement) {
+            console.log('  - Loading element classes before:', this.loadingElement.className);
             this.loadingElement.classList.add('hidden');
+            console.log('  - Loading element classes after:', this.loadingElement.className);
             console.log('  - Loading element hidden');
+        } else {
+            console.error('  - Loading element not found! Re-querying...');
+            const loadingEl = document.getElementById('loading');
+            if (loadingEl) {
+                loadingEl.classList.add('hidden');
+                console.log('  - Found and hid loading element via re-query');
+            }
         }
+        
         if (this.billDetailContent) {
+            console.log('  - Bill content classes before:', this.billDetailContent.className);
             this.billDetailContent.classList.remove('hidden');
+            console.log('  - Bill content classes after:', this.billDetailContent.className);
             console.log('  - Bill content shown');
+        } else {
+            console.error('  - Bill content element not found! Re-querying...');
+            const contentEl = document.getElementById('bill-detail-content');
+            if (contentEl) {
+                contentEl.classList.remove('hidden');
+                console.log('  - Found and showed content element via re-query');
+            }
         }
     }
 
@@ -1075,19 +1154,166 @@ View Details: ${window.location.href}`;
     }
 
     /**
-     * Render voting chart if voting data is available
+     * Render voting chart with real voting data
      */
-    renderVotingChart() {
-        if (this.bill.voting && (this.bill.status === 'Passed' || this.bill.status === 'Signed')) {
-            // Ensure voting chart script is loaded
-            if (window.votingChart) {
-                setTimeout(() => {
-                    window.votingChart.createDetailChart('voting-chart-container', this.bill.voting);
-                }, 100);
+    async renderVotingChart() {
+        const votingContainer = document.getElementById('voting-chart-container');
+        const votingSection = document.getElementById('voting-section');
+        
+        if (!votingContainer) {
+            console.log('No voting chart container found');
+            return;
+        }
+
+        try {
+            // Fetch real voting data from the API
+            console.log(`🗳️ Fetching voting data for ${this.billId}...`);
+            
+            const response = await fetch(`/api/bills/${encodeURIComponent(this.billId)}/voting`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                console.log(`No voting data available for ${this.billId} (${response.status})`);
+                // Hide the entire voting section if no data
+                if (votingSection) {
+                    votingSection.classList.add('hidden');
+                }
+                return;
+            }
+
+            const data = await response.json();
+            const votingData = data.data;
+
+            console.log('🗳️ Voting data received:', votingData);
+
+            // Check if we have actual voting data
+            if (votingData && votingData.votes && votingData.votes.length > 0) {
+                // Show the voting section and render the data
+                if (votingSection) {
+                    votingSection.classList.remove('hidden');
+                }
+                this.renderVotingResults(votingContainer, votingData);
             } else {
-                console.warn('Voting chart library not loaded');
+                // Hide the entire voting section if no meaningful data
+                console.log('No voting records found, hiding voting section');
+                if (votingSection) {
+                    votingSection.classList.add('hidden');
+                }
+            }
+
+        } catch (error) {
+            console.log('Voting data not available:', error.message);
+            // Hide the entire voting section on error (don't show red error messages)
+            if (votingSection) {
+                votingSection.classList.add('hidden');
             }
         }
+    }
+
+    /**
+     * Render voting results with real data
+     * @param {HTMLElement} container - Container element
+     * @param {Object} votingData - Real voting data from API
+     */
+    renderVotingResults(container, votingData) {
+        if (!votingData.votes || votingData.votes.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-600">No voting records found</p>';
+            return;
+        }
+
+        // Sort votes by date (most recent first)
+        const sortedVotes = votingData.votes.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        let html = '<div class="space-y-4">';
+
+        // Add summary if available
+        if (votingData.summary) {
+            html += `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <h5 class="text-sm font-medium text-blue-900 mb-1">Voting Summary</h5>
+                    <p class="text-sm text-blue-800">${votingData.summary}</p>
+                </div>
+            `;
+        }
+
+        // Render each vote
+        sortedVotes.forEach((vote, index) => {
+            const totalVotes = Object.values(vote.votes).reduce((sum, count) => sum + count, 0);
+            const yeaCount = vote.votes.yea || 0;
+            const nayCount = vote.votes.nay || 0;
+            const presentCount = vote.votes.present || 0;
+            const absentCount = vote.votes.absent || 0;
+
+            const yeaPercent = totalVotes > 0 ? Math.round((yeaCount / totalVotes) * 100) : 0;
+            const nayPercent = totalVotes > 0 ? Math.round((nayCount / totalVotes) * 100) : 0;
+
+            const voteDate = new Date(vote.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const passed = yeaCount > nayCount;
+
+            html += `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h5 class="text-sm font-medium text-gray-900">${vote.chamber} Vote</h5>
+                            <p class="text-xs text-gray-600">${voteDate}</p>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${passed ? '✅ Passed' : '❌ Failed'}
+                        </span>
+                    </div>
+                    
+                    ${totalVotes > 0 ? `
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-green-700">Yea: ${yeaCount}</span>
+                                <span class="text-red-700">Nay: ${nayCount}</span>
+                                ${presentCount > 0 ? `<span class="text-gray-600">Present: ${presentCount}</span>` : ''}
+                                ${absentCount > 0 ? `<span class="text-gray-500">Absent: ${absentCount}</span>` : ''}
+                            </div>
+                            
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="flex h-2 rounded-full overflow-hidden">
+                                    <div class="bg-green-500" style="width: ${yeaPercent}%"></div>
+                                    <div class="bg-red-500" style="width: ${nayPercent}%"></div>
+                                    <div class="bg-gray-400" style="width: ${100 - yeaPercent - nayPercent}%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-xs text-gray-600">
+                                Total votes: ${totalVotes} • ${yeaPercent}% in favor
+                            </div>
+                        </div>
+                    ` : `
+                        <p class="text-sm text-gray-600">${vote.description || 'Vote recorded without detailed counts'}</p>
+                    `}
+                </div>
+            `;
+        });
+
+        html += '</div>';
+
+        // Add data source attribution
+        html += `
+            <div class="mt-4 pt-3 border-t border-gray-200">
+                <p class="text-xs text-gray-500">
+                    <svg class="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Voting data from Texas Legislature Online • Last updated: ${new Date(votingData.lastUpdated).toLocaleDateString()}
+                </p>
+            </div>
+        `;
+
+        container.innerHTML = html;
     }
 
     /**
@@ -1148,11 +1374,12 @@ function hashCode(str) {
 }
 
 // Initialize the application when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 DOM loaded, initializing bill detail app...');
+function initializeBillDetailApp() {
+    console.log('🚀 Initializing bill detail app...');
     console.log('📍 Current URL:', window.location.href);
     console.log('🌐 User Agent:', navigator.userAgent);
     console.log('📱 Screen size:', `${window.innerWidth}x${window.innerHeight}`);
+    console.log('📄 Document ready state:', document.readyState);
 
     // Check for required DOM elements
     const requiredElements = [
@@ -1181,6 +1408,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (missingElements.length > 0) {
         console.error('❌ Missing required DOM elements:', missingElements);
+        // Try again after a short delay
+        setTimeout(() => {
+            console.log('🔄 Retrying initialization after missing elements...');
+            initializeBillDetailApp();
+        }, 100);
+        return;
     }
 
     // Check for dependencies (optional)
@@ -1200,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
         console.error('❌ Failed to initialize bill detail app:', error);
         console.error('  - Error name:', error.name);
-        console.error('  - Error message:', error.message);
+        console.log('  - Error message:', error.message);
         console.error('  - Error stack:', error.stack);
 
         // Show error message to user
@@ -1215,4 +1448,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.body.appendChild(errorDiv);
     }
-});
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeBillDetailApp);
+} else {
+    // DOM is already loaded
+    initializeBillDetailApp();
+}

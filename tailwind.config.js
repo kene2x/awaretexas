@@ -7,9 +7,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Texas flag color theme (red, white, blue)
+        // Texas flag color theme (exact specifications)
         'texas-red': {
           DEFAULT: '#BF0A30',
+          light: '#dc2626',
+          lighter: '#f87171',
+          lightest: '#fecaca',
+          dark: '#991b1b',
+          darker: '#7f1d1d',
           50: '#FEF2F2',
           100: '#FEE2E2',
           200: '#FECACA',
@@ -23,7 +28,11 @@ module.exports = {
         },
         'texas-blue': {
           DEFAULT: '#002868',
-          light: '#E0F2FE',
+          light: '#1e3a8a',
+          lighter: '#3b82f6',
+          lightest: '#dbeafe',
+          dark: '#001a4d',
+          darker: '#001233',
           50: '#F0F9FF',
           100: '#E0F2FE',
           200: '#BAE6FD',
@@ -34,6 +43,9 @@ module.exports = {
           700: '#0369A1',
           800: '#075985',
           900: '#0C4A6E'
+        },
+        'texas-white': {
+          DEFAULT: '#FFFFFF'
         },
         // Status colors matching Texas theme
         'status': {

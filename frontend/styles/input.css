@@ -2,39 +2,140 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Enhanced base styles for better typography and accessibility */
+/* Design System Foundation - Texas Flag Color Variables */
 @layer base {
+  :root {
+    /* Texas Flag Colors - Primary Palette */
+    --texas-red: #BF0A30;
+    --texas-white: #FFFFFF;
+    --texas-blue: #002868;
+    
+    /* Extended Color Palette - Light Variants */
+    --texas-red-light: #dc2626;
+    --texas-red-lighter: #f87171;
+    --texas-red-lightest: #fecaca;
+    --texas-blue-light: #1e3a8a;
+    --texas-blue-lighter: #3b82f6;
+    --texas-blue-lightest: #dbeafe;
+    
+    /* Extended Color Palette - Dark Variants */
+    --texas-red-dark: #991b1b;
+    --texas-red-darker: #7f1d1d;
+    --texas-blue-dark: #001a4d;
+    --texas-blue-darker: #001233;
+    
+    /* Neutral Colors for Design System */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    
+    /* Semantic Colors */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: var(--texas-red);
+    --info: var(--texas-blue);
+    
+    /* Typography Scale Variables */
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 1.875rem;
+    --font-size-4xl: 2.25rem;
+    --font-size-5xl: 3rem;
+    --font-size-6xl: 3.75rem;
+    
+    /* Spacing Scale */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
+    
+    /* Border Radius Scale */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-full: 9999px;
+    
+    /* Shadow Scale */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  }
+
   html {
     @apply scroll-smooth;
   }
   
   body {
-    @apply font-sans text-gray-900 antialiased;
+    @apply font-sans antialiased;
+    color: var(--gray-900);
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
   }
   
   /* Improved focus styles for accessibility */
   *:focus {
-    @apply outline-none ring-2 ring-blue-600 ring-offset-2;
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: var(--texas-blue);
   }
   
   /* Better button focus styles */
   button:focus,
   a:focus {
-    @apply outline-none ring-2 ring-blue-600 ring-offset-2;
+    @apply outline-none ring-2 ring-offset-2;
+    --tw-ring-color: var(--texas-blue);
   }
 }
 
 /* Enhanced component styles with Texas flag theme */
 @layer components {
-  /* BillCard Component with color-coded status */
+  /* Enhanced BillCard Component with Texas flag color system */
   .bill-card-component {
     @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all duration-200 cursor-pointer;
     @apply hover:border-texas-blue hover:border-opacity-30;
+    /* Enhanced card styling with Texas theme colors */
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .bill-card-component:hover {
     @apply transform -translate-y-1 shadow-lg;
+    /* Enhanced hover effects with Texas colors */
+    border-color: var(--texas-blue);
+    border-width: 2px;
+    box-shadow: 
+      0 10px 25px -5px rgba(0, 40, 104, 0.15),
+      0 8px 10px -6px rgba(0, 40, 104, 0.1),
+      var(--shadow-lg);
+    transform: translateY(-4px) scale(1.02);
+  }
+
+  /* Enhanced bill card focus state for accessibility */
+  .bill-card-component:focus {
+    @apply outline-none;
+    border-color: var(--texas-blue);
+    border-width: 2px;
+    box-shadow: 
+      0 0 0 4px rgba(0, 40, 104, 0.2),
+      0 10px 25px -5px rgba(0, 40, 104, 0.15),
+      var(--shadow-lg);
+    transform: translateY(-2px);
   }
 
   /* SearchBar Component with live filtering */
@@ -46,23 +147,61 @@
   .filter-panel-component {
     @apply bg-white border border-gray-200 rounded-lg shadow-sm;
   }
+
+  /* Enhanced filter panel for dark blue search section */
+  .search-section .filter-panel-component {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+  }
   
   /* Enhanced status badges with proper Texas flag colors */
   .status-badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors;
+    border-radius: var(--radius-full);
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    transition: all 0.2s ease-in-out;
   }
   
-  /* Status color indicators matching requirements */
+  /* Status color indicators using Texas flag color system */
   .status-filed {
-    @apply bg-yellow-50 text-yellow-700 border-yellow-400;
+    background-color: #fef3c7;
+    color: #92400e;
+    border-color: #f59e0b;
   }
   
   .status-committee {
-    @apply bg-texas-blue bg-opacity-10 text-texas-blue border-texas-blue border-opacity-30;
+    background-color: var(--texas-blue-lightest);
+    color: var(--texas-blue);
+    border-color: var(--texas-blue);
+    border-opacity: 0.4;
   }
   
   .status-passed {
-    @apply bg-green-50 text-green-700 border-green-400;
+    background-color: #d1fae5;
+    color: #065f46;
+    border-color: #10b981;
+  }
+
+  /* Enhanced status badge hover effects */
+  .bill-card-component:hover .status-badge.status-filed {
+    background-color: #fde68a;
+    transform: scale(1.05);
+  }
+
+  .bill-card-component:hover .status-badge.status-committee {
+    background-color: var(--texas-blue-lighter);
+    color: var(--texas-white);
+    border-color: var(--texas-blue);
+    transform: scale(1.05);
+  }
+
+  .bill-card-component:hover .status-badge.status-passed {
+    background-color: #a7f3d0;
+    transform: scale(1.05);
   }
   
   /* Enhanced search input with better responsive design */
@@ -71,11 +210,244 @@
     @apply focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all duration-200;
     @apply placeholder:text-gray-500;
   }
+
+  /* Search icon styling for modern input */
+  .search-bar-component .absolute svg {
+    color: var(--gray-400);
+    transition: color 0.3s ease-in-out;
+  }
+
+  .search-section .search-bar-component .absolute svg {
+    color: var(--gray-500);
+  }
+
+  .search-section .input-modern:focus + .absolute svg,
+  .search-section .input-modern:hover + .absolute svg {
+    color: var(--texas-blue);
+  }
+
+  /* Search indicator styling */
+  #search-indicator svg {
+    color: var(--texas-blue);
+  }
+
+  .search-section #search-indicator svg {
+    color: var(--texas-red);
+  }
   
-  /* Enhanced filter select with Texas theme */
+  /* Enhanced filter select with modern rounded design */
   .filter-select {
-    @apply w-full px-3 py-2 text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm;
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-all duration-200;
+    @apply w-full text-gray-700 bg-white border shadow-sm transition-all duration-200;
+    padding: 0.875rem 1rem;
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--gray-300);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  .filter-select:hover {
+    border-color: var(--gray-400);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .filter-select:focus {
+    @apply outline-none;
+    border-color: var(--texas-blue);
+    box-shadow: 0 0 0 3px rgba(0, 40, 104, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background-color: var(--texas-white);
+    transform: translateY(-1px);
+  }
+
+  /* Enhanced filter select for dark blue search section */
+  .search-section .filter-select {
+    border-radius: var(--radius-xl);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    color: var(--gray-800);
+    font-weight: 500;
+    box-shadow: 
+      0 6px 12px -2px rgba(0, 0, 0, 0.15), 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .search-section .filter-select:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background-color: rgba(255, 255, 255, 0.98);
+    box-shadow: 
+      0 8px 16px -4px rgba(0, 0, 0, 0.2), 
+      0 6px 8px -2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .search-section .filter-select:focus {
+    border-color: rgba(255, 255, 255, 0.7);
+    background-color: var(--texas-white);
+    box-shadow: 
+      0 0 0 4px rgba(255, 255, 255, 0.3), 
+      0 12px 20px -6px rgba(0, 0, 0, 0.25),
+      0 8px 12px -4px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  /* Multi-select filter styling for better UX */
+  .filter-select[multiple] {
+    min-height: 5rem;
+    padding: 0.75rem;
+  }
+
+  .filter-select[multiple] option {
+    padding: 0.5rem 0.75rem;
+    margin: 0.125rem 0;
+    border-radius: var(--radius-md);
+    transition: all 0.15s ease-in-out;
+  }
+
+  .filter-select[multiple] option:hover {
+    background-color: var(--texas-blue-lightest);
+    color: var(--texas-blue);
+  }
+
+  .filter-select[multiple] option:checked {
+    background-color: var(--texas-blue);
+    color: var(--texas-white);
+    font-weight: 600;
+  }
+
+  .search-section .filter-select[multiple] option:checked {
+    background-color: var(--texas-red);
+    color: var(--texas-white);
+  }
+
+  /* Enhanced form labels for filter dropdowns */
+  .filter-panel-component label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+    display: block;
+    letter-spacing: 0.025em;
+    transition: color 0.2s ease-in-out;
+  }
+
+  .search-section .filter-panel-component label {
+    color: var(--gray-800);
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  }
+
+  /* Enhanced multi-select helper text */
+  .filter-panel-component label .text-xs {
+    font-weight: 400;
+    color: var(--gray-500);
+    font-style: italic;
+    margin-left: 0.25rem;
+  }
+
+  .search-section .filter-panel-component label .text-xs {
+    color: var(--gray-600);
+  }
+
+  /* Enhanced filter container spacing with mobile-first responsive design */
+  .filter-panel-component .relative {
+    position: relative;
+  }
+
+  .filter-panel-component .grid {
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .filter-panel-component .grid {
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .filter-panel-component .grid {
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .filter-panel-component .grid {
+      gap: 2.5rem;
+    }
+  }
+
+  /* Enhanced responsive filter layout for search section */
+  .search-section .filter-panel-component .grid {
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .search-section .filter-panel-component .grid {
+      gap: 1.25rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-section .filter-panel-component .grid {
+      gap: 1.75rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-section .filter-panel-component .grid {
+      gap: 2.25rem;
+    }
+  }
+
+  /* Enhanced responsive filter panel padding */
+  .filter-panel-component {
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .filter-panel-component {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .filter-panel-component {
+      padding: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .filter-panel-component {
+      padding: 2.5rem;
+    }
+  }
+
+  /* Enhanced responsive search input sizing */
+  .search-bar-component {
+    width: 100%;
+  }
+
+  .search-bar-component input {
+    width: 100%;
+    font-size: clamp(0.875rem, 2vw, 1rem);
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(2.5rem, 4vw, 3rem) clamp(0.75rem, 2vw, 1rem) clamp(0.75rem, 2vw, 1rem);
+  }
+
+  @media (min-width: 640px) {
+    .search-bar-component input {
+      padding: 1rem 3rem 1rem 1rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-bar-component input {
+      padding: 1.25rem 3.5rem 1.25rem 1.25rem;
+    }
   }
   
   /* Texas-themed buttons */
@@ -84,6 +456,67 @@
     @apply hover:bg-blue-700 focus:ring-2 focus:ring-blue-600 focus:ring-offset-2;
     @apply transition-all duration-200 shadow-sm hover:shadow-md;
   }
+
+  /* Enhanced button styling for dark blue search section */
+  .search-section .btn-texas-primary {
+    background-color: var(--texas-red);
+    border-radius: var(--radius-xl);
+    padding: 1rem 1.75rem;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    box-shadow: 
+      0 6px 12px -2px rgba(0, 0, 0, 0.15), 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .search-section .btn-texas-primary:hover {
+    background-color: var(--texas-red-light);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 8px 16px -4px rgba(0, 0, 0, 0.2), 
+      0 6px 8px -2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    scale: 1.02;
+  }
+
+  .search-section .btn-texas-primary:focus {
+    outline: none;
+    box-shadow: 
+      0 0 0 4px rgba(255, 255, 255, 0.3), 
+      0 12px 20px -6px rgba(0, 0, 0, 0.25),
+      0 8px 12px -4px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .search-section .btn-texas-primary:active {
+    transform: translateY(-1px);
+    scale: 0.98;
+    box-shadow: 
+      0 4px 8px -2px rgba(0, 0, 0, 0.2), 
+      0 2px 4px -1px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Enhanced Clear Filters button icon styling */
+  .search-section .btn-texas-primary svg {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .search-section .btn-texas-primary:hover svg {
+    transform: rotate(90deg) scale(1.1);
+  }
   
   .btn-texas-secondary {
     @apply bg-texas-red text-white px-4 py-2 rounded-md font-medium;
@@ -91,10 +524,564 @@
     @apply transition-all duration-200 shadow-sm hover:shadow-md;
   }
   
+  /* Navigation Header Component - AWARE TEXAS Branding */
+  .navigation-header {
+    @apply bg-white shadow-md border-b border-gray-200 sticky top-0 z-50;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  }
+  
+  .nav-container {
+    width: 100%;
+    max-width: 1536px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4rem;
+  }
+
+  @media (min-width: 640px) {
+    .nav-container {
+      padding: 0 1.5rem;
+      height: 4.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .nav-container {
+      padding: 0 2rem;
+      height: 5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .nav-container {
+      padding: 0 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .nav-container {
+      padding: 0 3rem;
+    }
+  }
+  
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .nav-brand {
+      gap: 1rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .nav-brand {
+      gap: 1.25rem;
+    }
+  }
+  
+  .texas-flag-icon {
+    width: 2rem;
+    height: 1.5rem;
+    border-radius: 0.125rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    background: linear-gradient(to right, 
+      var(--texas-blue) 0%, 
+      var(--texas-blue) 33.33%, 
+      var(--texas-white) 33.33%, 
+      var(--texas-white) 66.66%, 
+      var(--texas-red) 66.66%, 
+      var(--texas-red) 100%);
+    border: 1px solid var(--gray-300);
+  }
+
+  @media (min-width: 640px) {
+    .texas-flag-icon {
+      width: 2.5rem;
+      height: 2rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .texas-flag-icon {
+      width: 3rem;
+      height: 2.25rem;
+    }
+  }
+  
+  .brand-text {
+    font-size: clamp(1.125rem, 3vw, 2rem);
+    font-weight: 700;
+    letter-spacing: 0.025em;
+    color: var(--texas-blue);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    line-height: 1.2;
+  }
+
+  @media (min-width: 640px) {
+    .brand-text {
+      font-size: clamp(1.25rem, 3vw, 2.25rem);
+      font-weight: 800;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .brand-text {
+      font-size: clamp(1.5rem, 3vw, 2.5rem);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .brand-text {
+      font-size: clamp(1.75rem, 3vw, 3rem);
+    }
+  }
+  
+  .nav-links {
+    @apply items-center space-x-6 lg:space-x-8;
+    display: none;
+  }
+  
+  @media (min-width: 640px) {
+    .nav-links {
+      display: flex;
+    }
+  }
+  
+  .nav-link {
+    @apply text-gray-700 hover:text-texas-blue font-medium text-sm lg:text-base;
+    @apply transition-colors duration-200 relative;
+    @apply focus:outline-none focus:ring-2 focus:ring-texas-blue focus:ring-offset-2 rounded-md px-2 py-1;
+  }
+  
+  .nav-link:hover::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-texas-blue;
+    @apply transform scale-x-100 transition-transform duration-200;
+  }
+  
+  .nav-link::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-texas-blue;
+    @apply transform scale-x-0 transition-transform duration-200;
+  }
+  
+  /* Mobile Navigation Menu */
+  .mobile-nav-button {
+    @apply p-2 rounded-md text-gray-700 hover:text-texas-blue hover:bg-gray-100;
+    @apply focus:outline-none focus:ring-2 focus:ring-texas-blue focus:ring-offset-2;
+    @apply transition-colors duration-200;
+    display: block;
+  }
+  
+  @media (min-width: 640px) {
+    .mobile-nav-button {
+      display: none;
+    }
+  }
+  
+  .mobile-nav-menu {
+    @apply absolute top-full left-0 right-0 bg-white border-t border-gray-200 shadow-lg;
+    @apply transform transition-all duration-300 ease-in-out;
+    display: block;
+  }
+  
+  @media (min-width: 640px) {
+    .mobile-nav-menu {
+      display: none !important;
+    }
+  }
+  
+  .mobile-nav-menu.hidden {
+    @apply opacity-0 -translate-y-2 pointer-events-none;
+  }
+  
+  .mobile-nav-menu.visible {
+    @apply opacity-100 translate-y-0;
+  }
+  
+  .mobile-nav-links {
+    @apply flex flex-col py-4;
+  }
+  
+  .mobile-nav-link {
+    @apply block px-6 py-3 text-gray-700 hover:text-texas-blue hover:bg-gray-50;
+    @apply font-medium transition-colors duration-200;
+    @apply border-l-4 border-transparent hover:border-texas-blue;
+  }
+  
   /* Enhanced navigation header */
   .texas-header {
     @apply bg-texas-blue text-white shadow-lg;
     background: linear-gradient(135deg, #002868 0%, #0369a1 100%);
+  }
+  
+  /* Hero Section Component - AWARE TEXAS Branding with Enhanced Responsive Design */
+  .hero-section {
+    @apply relative flex items-center justify-center overflow-hidden;
+    background: linear-gradient(135deg, var(--texas-blue) 0%, var(--texas-blue-light) 100%);
+    /* Mobile-first responsive height */
+    min-height: 50vh;
+    padding: 2rem 0;
+  }
+
+  @media (min-width: 640px) {
+    .hero-section {
+      min-height: 55vh;
+      padding: 3rem 0;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-section {
+      min-height: 60vh;
+      padding: 4rem 0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-section {
+      min-height: 65vh;
+      padding: 5rem 0;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .hero-section {
+      min-height: 70vh;
+      padding: 6rem 0;
+    }
+  }
+
+  /* Container queries for hero section content */
+  @container (min-width: 320px) {
+    .hero-content {
+      padding: 1rem;
+    }
+  }
+
+  @container (min-width: 640px) {
+    .hero-content {
+      padding: 2rem;
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .hero-content {
+      padding: 3rem;
+    }
+  }
+
+  /* Dark Blue Search Section Component with Mobile-First Responsive Design */
+  .search-section {
+    @apply relative;
+    background-color: var(--texas-blue);
+    background: linear-gradient(135deg, var(--texas-blue) 0%, var(--texas-blue-dark) 100%);
+    /* Mobile-first responsive padding */
+    padding: 2rem 0;
+    /* Section transitions and spacing */
+    margin-top: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  @media (min-width: 640px) {
+    .search-section {
+      padding: 3rem 0;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-section {
+      padding: 4rem 0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-section {
+      padding: 5rem 0;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .search-section {
+      padding: 6rem 0;
+    }
+  }
+
+  .search-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .search-container {
+      max-width: 1280px;
+      padding: 0 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-container {
+      max-width: 1400px;
+      padding: 0 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-container {
+      max-width: 1536px;
+      padding: 0 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .search-container {
+      padding: 0 3rem;
+    }
+  }
+
+  .search-heading {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: clamp(1.25rem, 4vw, 2.5rem);
+    font-weight: 700;
+    color: var(--texas-white);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  @media (min-width: 640px) {
+    .search-heading {
+      margin-bottom: 2rem;
+      font-size: clamp(1.5rem, 4vw, 2.75rem);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-heading {
+      margin-bottom: 2.5rem;
+      font-size: clamp(1.75rem, 4vw, 3rem);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-heading {
+      margin-bottom: 3rem;
+      font-size: clamp(2rem, 4vw, 3.25rem);
+    }
+  }
+
+  .search-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .search-content {
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-content {
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-content {
+      gap: 2.5rem;
+    }
+  }
+
+  .search-form-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .search-form-wrapper {
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .search-form-wrapper {
+      gap: 2rem;
+    }
+  }
+  
+  .hero-background {
+    @apply absolute inset-0 z-0;
+  }
+  
+  .hero-background-image {
+    @apply absolute inset-0 w-full h-full object-cover;
+    background-image: url('../images/texas-building.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  
+  .hero-overlay {
+    @apply absolute inset-0 z-10;
+    background: linear-gradient(
+      135deg,
+      rgba(0, 40, 104, 0.85) 0%,
+      rgba(0, 40, 104, 0.7) 50%,
+      rgba(191, 10, 48, 0.75) 100%
+    );
+  }
+  
+  .hero-content {
+    position: relative;
+    z-index: 20;
+    text-align: center;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: heroFadeIn 1.2s ease-out;
+  }
+
+  @media (min-width: 640px) {
+    .hero-content {
+      max-width: 1400px;
+      padding: 1.5rem;
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-content {
+      max-width: 1600px;
+      padding: 2rem;
+      gap: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-content {
+      padding: 2.5rem;
+      gap: 3rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .hero-content {
+      padding: 3rem;
+      gap: 3.5rem;
+    }
+  }
+  
+  .hero-branding {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: heroSlideInDown 0.8s ease-out;
+  }
+
+  @media (min-width: 640px) {
+    .hero-branding {
+      gap: 0.75rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-branding {
+      gap: 1rem;
+    }
+  }
+  
+  .aware-texas-logo {
+    font-size: clamp(2rem, 8vw, 6rem);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    color: var(--texas-white);
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4), 1px 1px 2px rgba(0, 0, 0, 0.6);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (min-width: 640px) {
+    .aware-texas-logo {
+      font-size: clamp(2.5rem, 8vw, 7rem);
+      line-height: 0.85;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .aware-texas-logo {
+      font-size: clamp(3rem, 8vw, 8rem);
+      line-height: 0.8;
+    }
+  }
+  
+  .hero-tagline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: heroSlideInUp 1s ease-out 0.3s both;
+  }
+
+  @media (min-width: 640px) {
+    .hero-tagline {
+      gap: 0.75rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero-tagline {
+      gap: 1rem;
+    }
+  }
+  
+  .hero-tagline h2 {
+    font-size: clamp(1rem, 4vw, 3rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--texas-white);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 1px 1px 2px rgba(0, 0, 0, 0.7);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Enhanced readability with better contrast */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  }
+
+  @media (min-width: 640px) {
+    .hero-tagline h2 {
+      font-size: clamp(1.25rem, 4vw, 3.5rem);
+      line-height: 1.15;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-tagline h2 {
+      font-size: clamp(1.5rem, 4vw, 4rem);
+      line-height: 1.1;
+    }
   }
   
   /* Texas flag accent elements */
@@ -112,10 +1099,72 @@
     @apply hover:border-texas-blue hover:border-opacity-20;
   }
   
-  /* Responsive grid layouts */
+  /* Enhanced responsive grid layouts with mobile-first approach */
   .bill-grid {
-    @apply grid gap-4 sm:gap-6;
-    @apply grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 640px) {
+    .bill-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .bill-grid {
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .bill-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .bill-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .bill-grid {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+
+  /* Enhanced bill card responsive behavior */
+  .bill-card-component {
+    width: 100%;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (min-width: 640px) {
+    .bill-card-component {
+      min-height: 220px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .bill-card-component {
+      min-height: 240px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .bill-card-component {
+      min-height: 260px;
+    }
   }
   
   .detail-grid {
@@ -123,7 +1172,7 @@
     @apply grid-cols-1 lg:grid-cols-3;
   }
   
-  /* Enhanced typography */
+  /* Enhanced typography with Texas design system */
   .heading-primary {
     @apply text-2xl sm:text-3xl font-bold text-gray-900 leading-tight;
   }
@@ -139,9 +1188,679 @@
   .text-caption {
     @apply text-xs sm:text-sm text-gray-600;
   }
+
+  /* Enhanced bill card typography using design system */
+  .bill-card-component .text-heading-3 {
+    font-size: clamp(1.125rem, 2.5vw, 1.375rem);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--texas-blue);
+  }
+
+  .bill-card-component .text-body-lg {
+    font-size: clamp(0.9375rem, 2vw, 1.0625rem);
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--gray-900);
+  }
+
+  .bill-card-component .text-body {
+    font-size: clamp(0.8125rem, 1.5vw, 0.9375rem);
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--gray-600);
+  }
+
+  .bill-card-component .text-body-sm {
+    font-size: clamp(0.75rem, 1.2vw, 0.8125rem);
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--gray-500);
+  }
+
+  /* Enhanced bill card hover effects for typography */
+  .bill-card-component:hover .text-heading-3 {
+    color: var(--texas-red);
+    transition: color 0.2s ease-in-out;
+  }
+
+  .bill-card-component:hover .text-body-lg {
+    color: var(--gray-800);
+  }
 }
 
 @layer utilities {
+  /* Mobile-first responsive containers */
+  .container-responsive {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-responsive {
+      max-width: 1280px;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .container-responsive {
+      max-width: 1400px;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-responsive {
+      max-width: 1536px;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-responsive {
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+    }
+  }
+
+  /* Responsive vertical padding */
+  .py-responsive {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .py-responsive {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .py-responsive {
+      padding-top: 2.5rem;
+      padding-bottom: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .py-responsive {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+  }
+
+  /* Bill detail page layout */
+  .main-content {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .main-content {
+      max-width: 1280px;
+      padding: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .main-content {
+      max-width: 1400px;
+      padding: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .main-content {
+      padding: 2.5rem;
+    }
+  }
+
+  .bill-detail-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .bill-detail-container {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .bill-detail-container {
+      padding: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .bill-detail-container {
+      padding: 2.5rem;
+    }
+  }
+
+  .bill-detail-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 1024px) {
+    .bill-detail-grid {
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .bill-detail-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .bill-detail-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .bill-detail-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    border: 1px solid rgb(229 231 235);
+    padding: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .bill-detail-card {
+      padding: 2rem;
+    }
+  }
+
+  .bill-header-card {
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-card {
+    /* Summary specific styles */
+  }
+
+  .news-card {
+    /* News specific styles */
+  }
+
+  .sponsor-card {
+    /* Sponsor specific styles */
+  }
+
+  .official-link-card {
+    /* Official link specific styles */
+  }
+
+  .loading-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    padding: 2rem;
+  }
+
+  .loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-text {
+    font-size: 0.875rem;
+    color: rgb(107 114 128);
+    font-weight: 500;
+  }
+
+  .error-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    padding: 2rem;
+  }
+
+  .error-container {
+    width: 100%;
+    max-width: 28rem;
+  }
+
+  .error-card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    text-align: center;
+  }
+
+  .error-icon {
+    width: 3rem;
+    height: 3rem;
+    color: rgb(239 68 68);
+    margin: 0 auto 1rem;
+  }
+
+  .error-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: rgb(17 24 39);
+    margin-bottom: 0.5rem;
+  }
+
+  .error-message {
+    font-size: 0.875rem;
+    color: rgb(107 114 128);
+    margin-bottom: 1.5rem;
+  }
+
+  .error-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 640px) {
+    .error-actions {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(107 114 128);
+    background-color: white;
+    border: 1px solid rgb(209 213 219);
+    border-radius: 0.375rem;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background-color: rgb(249 250 251);
+    border-color: rgb(156 163 175);
+  }
+
+  /* Design System Typography Scale with Responsive Clamp */
+  .text-hero {
+    font-size: clamp(2.25rem, 8vw, 5.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    /* Enhanced readability across devices */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+  
+  .text-hero-tagline {
+    font-size: clamp(1.125rem, 4vw, 3rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    /* Enhanced readability with better font rendering */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: "kern" 1, "liga" 1;
+    /* Improved text rendering for better readability */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Enhanced hero typography for better readability */
+  .text-hero-responsive {
+    font-size: clamp(2rem, 5vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+  }
+  
+  .text-tagline-responsive {
+    font-size: clamp(1rem, 2.5vw, 2rem);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+  }
+  
+  .text-heading-1 {
+    font-size: clamp(1.875rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  
+  .text-heading-2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+  }
+  
+  .text-heading-3 {
+    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  
+  .text-body-lg {
+    font-size: clamp(1rem, 2vw, 1.125rem);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  
+  .text-body {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  
+  .text-body-sm {
+    font-size: clamp(0.75rem, 1.2vw, 0.875rem);
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  
+  /* Design System Color Utilities */
+  .bg-texas-red {
+    background-color: var(--texas-red);
+  }
+  
+  .bg-texas-blue {
+    background-color: var(--texas-blue);
+  }
+  
+  .bg-texas-white {
+    background-color: var(--texas-white);
+  }
+  
+  .bg-texas-red-light {
+    background-color: var(--texas-red-light);
+  }
+  
+  .bg-texas-blue-light {
+    background-color: var(--texas-blue-light);
+  }
+  
+  .text-texas-red {
+    color: var(--texas-red);
+  }
+  
+  .text-texas-blue {
+    color: var(--texas-blue);
+  }
+  
+  .text-texas-white {
+    color: var(--texas-white);
+  }
+  
+  .border-texas-red {
+    border-color: var(--texas-red);
+  }
+  
+  .border-texas-blue {
+    border-color: var(--texas-blue);
+  }
+  
+  /* Design System Spacing Utilities */
+  .space-texas-xs {
+    margin: var(--spacing-xs);
+  }
+  
+  .space-texas-sm {
+    margin: var(--spacing-sm);
+  }
+  
+  .space-texas-md {
+    margin: var(--spacing-md);
+  }
+  
+  .space-texas-lg {
+    margin: var(--spacing-lg);
+  }
+  
+  .space-texas-xl {
+    margin: var(--spacing-xl);
+  }
+  
+  .p-texas-xs {
+    padding: var(--spacing-xs);
+  }
+  
+  .p-texas-sm {
+    padding: var(--spacing-sm);
+  }
+  
+  .p-texas-md {
+    padding: var(--spacing-md);
+  }
+  
+  .p-texas-lg {
+    padding: var(--spacing-lg);
+  }
+  
+  .p-texas-xl {
+    padding: var(--spacing-xl);
+  }
+  
+  /* Design System Border Radius Utilities */
+  .rounded-texas-sm {
+    border-radius: var(--radius-sm);
+  }
+  
+  .rounded-texas-md {
+    border-radius: var(--radius-md);
+  }
+  
+  .rounded-texas-lg {
+    border-radius: var(--radius-lg);
+  }
+  
+  .rounded-texas-xl {
+    border-radius: var(--radius-xl);
+  }
+  
+  .rounded-texas-2xl {
+    border-radius: var(--radius-2xl);
+  }
+  
+  .rounded-texas-full {
+    border-radius: var(--radius-full);
+  }
+  
+  /* Design System Shadow Utilities */
+  .shadow-texas-sm {
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .shadow-texas-md {
+    box-shadow: var(--shadow-md);
+  }
+  
+  .shadow-texas-lg {
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .shadow-texas-xl {
+    box-shadow: var(--shadow-xl);
+  }
+  
+  /* Modern Input Styling Utilities */
+  .input-modern {
+    padding: 1rem 1.25rem;
+    padding-left: 3rem; /* Space for search icon */
+    border: 2px solid transparent;
+    border-radius: var(--radius-2xl);
+    background-color: var(--texas-white);
+    font-size: var(--font-size-base);
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--gray-800);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    width: 100%;
+  }
+  
+  .input-modern:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+  
+  .input-modern:focus {
+    outline: none;
+    border-color: var(--texas-white);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4), 0 8px 16px -4px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+    background-color: var(--texas-white);
+  }
+  
+  .input-modern::placeholder {
+    color: var(--gray-500);
+    font-weight: 400;
+  }
+
+  /* Enhanced search input for dark blue section with proper contrast */
+  .search-section .input-modern {
+    background-color: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(12px);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    color: var(--gray-800);
+    font-weight: 500;
+    box-shadow: 
+      0 8px 16px -4px rgba(0, 0, 0, 0.15), 
+      0 4px 6px -2px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .search-section .input-modern:hover {
+    background-color: rgba(255, 255, 255, 1);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 
+      0 12px 20px -6px rgba(0, 0, 0, 0.2), 
+      0 6px 8px -2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .search-section .input-modern:focus {
+    background-color: var(--texas-white);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 
+      0 0 0 4px rgba(255, 255, 255, 0.4), 
+      0 16px 24px -8px rgba(0, 0, 0, 0.25),
+      0 8px 12px -4px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px);
+  }
+
+  .search-section .input-modern::placeholder {
+    color: var(--gray-600);
+    font-weight: 400;
+  }
+  
+  /* Button Utilities */
+  .btn-texas-primary {
+    background-color: var(--texas-blue);
+    color: var(--texas-white);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .btn-texas-primary:hover {
+    background-color: var(--texas-blue-light);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  
+  .btn-texas-secondary {
+    background-color: var(--texas-red);
+    color: var(--texas-white);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .btn-texas-secondary:hover {
+    background-color: var(--texas-red-light);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  
+  .btn-texas-outline {
+    background-color: transparent;
+    color: var(--texas-blue);
+    padding: 0.75rem 1.5rem;
+    border: 2px solid var(--texas-blue);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .btn-texas-outline:hover {
+    background-color: var(--texas-blue);
+    color: var(--texas-white);
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Container Utilities */
+  .container-texas {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+  }
+  
+  @media (min-width: 768px) {
+    .container-texas {
+      padding: 0 var(--spacing-xl);
+    }
+  }
+  
   /* Enhanced line clamp utilities */
   .line-clamp-1 {
     display: -webkit-box;
@@ -191,6 +1910,244 @@
   /* Responsive spacing utilities */
   .space-y-responsive > :not([hidden]) ~ :not([hidden]) {
     margin-top: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .space-y-responsive > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .space-y-responsive > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 2rem;
+    }
+  }
+
+  /* Enhanced responsive container system */
+  .container-responsive {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-responsive {
+      max-width: 640px;
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .container-responsive {
+      max-width: 768px;
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-responsive {
+      max-width: 1024px;
+      padding-left: 2.5rem;
+      padding-right: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-responsive {
+      max-width: 1280px;
+      padding-left: 3rem;
+      padding-right: 3rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .container-responsive {
+      max-width: 1536px;
+    }
+  }
+
+  /* Enhanced responsive grid system for bill cards */
+  .bill-grid-responsive {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 640px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .bill-grid-responsive {
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+
+  /* Responsive text sizing utilities */
+  .text-responsive-xs {
+    font-size: clamp(0.625rem, 1vw, 0.75rem);
+  }
+
+  .text-responsive-sm {
+    font-size: clamp(0.75rem, 1.2vw, 0.875rem);
+  }
+
+  .text-responsive-base {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1rem, 2vw, 1.125rem);
+  }
+
+  .text-responsive-xl {
+    font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+  }
+
+  .text-responsive-2xl {
+    font-size: clamp(1.25rem, 3vw, 1.5rem);
+  }
+
+  .text-responsive-3xl {
+    font-size: clamp(1.5rem, 4vw, 1.875rem);
+  }
+
+  /* Enhanced responsive padding utilities */
+  .p-responsive {
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .p-responsive {
+      padding: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .p-responsive {
+      padding: 2rem;
+    }
+  }
+
+  .px-responsive {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .px-responsive {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .px-responsive {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  .py-responsive {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .py-responsive {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .py-responsive {
+      padding-top: 2rem;
+      padding-bottom: 2rem;
+    }
+  }
+
+  /* Enhanced responsive margin utilities */
+  .m-responsive {
+    margin: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .m-responsive {
+      margin: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .m-responsive {
+      margin: 2rem;
+    }
+  }
+
+  .mx-responsive {
+    margin-left: 1rem;
+    margin-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .mx-responsive {
+      margin-left: 1.5rem;
+      margin-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .mx-responsive {
+      margin-left: 2rem;
+      margin-right: 2rem;
+    }
+  }
+
+  .my-responsive {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .my-responsive {
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .my-responsive {
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+  }
   }
   
   @screen sm {
@@ -274,7 +2231,149 @@
       transform: scale(1); 
     }
   }
-}
+  
+  /* Hero Section Animation Keyframes - Enhanced for smooth loading */
+  @keyframes heroFadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateY(10px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes heroSlideInDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-40px) scale(0.9);
+    }
+    60% {
+      opacity: 0.8;
+      transform: translateY(-5px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes heroSlideInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(40px) scale(0.9);
+    }
+    60% {
+      opacity: 0.8;
+      transform: translateY(5px) scale(0.98);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  /* Additional hero animations for enhanced loading experience */
+  @keyframes heroTextGlow {
+    0%, 100% {
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4), 1px 1px 2px rgba(0, 0, 0, 0.6);
+    }
+    50% {
+      text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5), 1px 1px 3px rgba(0, 0, 0, 0.7), 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+  }
+  
+  @keyframes heroBackgroundShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Enhanced hero background image loading animation */
+  @keyframes heroImageFadeIn {
+    0% {
+      opacity: 0;
+      transform: scale(1.05);
+      filter: blur(2px);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.02);
+      filter: blur(1px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+      filter: blur(0);
+    }
+  }
+
+  /* Smooth section transition animations */
+  @keyframes sectionSlideInView {
+    0% {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Enhanced loading spinner with Texas colors */
+  @keyframes texasSpinner {
+    0% {
+      transform: rotate(0deg);
+      border-color: var(--texas-blue) transparent var(--texas-red) transparent;
+    }
+    25% {
+      border-color: var(--texas-red) transparent var(--texas-blue) transparent;
+    }
+    50% {
+      transform: rotate(180deg);
+      border-color: var(--texas-blue) transparent var(--texas-red) transparent;
+    }
+    75% {
+      border-color: var(--texas-red) transparent var(--texas-blue) transparent;
+    }
+    100% {
+      transform: rotate(360deg);
+      border-color: var(--texas-blue) transparent var(--texas-red) transparent;
+    }
+  }
+
+  /* Bill card staggered entrance animation */
+  @keyframes billCardEnter {
+    0% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Skeleton loading pulse with Texas theme */
+  @keyframes texasPulse {
+    0%, 100% {
+      background-color: var(--gray-200);
+    }
+    50% {
+      background-color: var(--texas-blue-lightest);
+    }
+  }
 
 /* Enhanced responsive design utilities */
 @layer utilities {
@@ -308,5 +2407,504 @@
   
   .status-indicator.passed {
     @apply bg-green-50 text-green-800 border-green-300;
+  }
+  
+  /* Hero Section Responsive Utilities */
+  .hero-spacing {
+    @apply py-12 sm:py-16 lg:py-20;
+  }
+  
+  .hero-content-spacing {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+  
+  /* Enhanced text readability utilities */
+  .text-shadow-hero {
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4), 1px 1px 2px rgba(0, 0, 0, 0.6), 0 0 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .text-shadow-tagline {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Hero section accessibility improvements */
+  .hero-focus-visible:focus-visible {
+    outline: 3px solid var(--texas-white);
+    outline-offset: 2px;
+  }
+  
+  /* Enhanced hero content spacing for better hierarchy */
+  .hero-content-hierarchy {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+
+  /* Search Section Responsive Utilities */
+  .search-section-spacing {
+    padding: clamp(3rem, 8vw, 5rem) 0;
+  }
+
+  .search-content-spacing {
+    @apply space-y-4 sm:space-y-6 lg:space-y-8;
+  }
+
+  /* Responsive search section transitions */
+  .search-section-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Enhanced search section for mobile */
+  @media (max-width: 640px) {
+    .search-section {
+      padding: 3rem 0;
+    }
+    
+    .search-heading {
+      font-size: 1.75rem;
+      margin-bottom: 2rem;
+    }
+    
+    .search-content {
+      @apply space-y-4;
+    }
+  }
+
+  /* Enhanced search section for tablet and desktop */
+  @media (min-width: 768px) {
+    .search-section {
+      padding: 4.5rem 0;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .search-section {
+      padding: 5rem 0;
+    }
+  }
+  
+  /* Responsive hero text sizing for optimal readability */
+  .hero-text-responsive {
+    /* Ensure minimum readable size on small screens */
+    font-size: clamp(2rem, 7vw, 5.5rem);
+    /* Maintain optimal line height for readability */
+    line-height: clamp(0.9, 1vw + 0.8, 1);
+    /* Adjust letter spacing for better readability at different sizes */
+    letter-spacing: clamp(-0.03em, -0.5vw + 0.02em, -0.02em);
+  }
+  
+  .tagline-text-responsive {
+    /* Ensure tagline remains readable at all sizes */
+    font-size: clamp(1rem, 3.5vw, 2.75rem);
+    /* Optimal line height for tagline readability */
+    line-height: clamp(1.1, 0.5vw + 1, 1.25);
+    /* Subtle letter spacing adjustment */
+    letter-spacing: clamp(-0.02em, -0.2vw + 0.01em, -0.01em);
+  }
+  
+  /* Enhanced contrast for better readability */
+  .hero-high-contrast {
+    color: var(--texas-white);
+    text-shadow: 
+      3px 3px 6px rgba(0, 0, 0, 0.6),
+      1px 1px 2px rgba(0, 0, 0, 0.8),
+      0 0 10px rgba(0, 0, 0, 0.4);
+    filter: contrast(1.1) brightness(1.05);
+  }
+  
+  /* Smooth loading animation for hero elements */
+  .hero-smooth-load {
+    animation: heroFadeIn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .hero-brand-load {
+    animation: heroSlideInDown 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .hero-tagline-load {
+    animation: heroSlideInUp 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s both;
+  }
+
+  /* Enhanced hero background image animation */
+  .hero-background-image {
+    animation: heroImageFadeIn 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: opacity, transform, filter;
+  }
+
+  /* Section transition animations */
+  .section-animate-in {
+    animation: sectionSlideInView 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* Enhanced loading states with Texas theme */
+  .loading-spinner-texas {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    animation: texasSpinner 1.2s linear infinite;
+    will-change: transform, border-color;
+  }
+
+  .loading-spinner-small {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    animation: texasSpinner 1s linear infinite;
+  }
+
+  /* Bill card entrance animations */
+  .bill-card-animate-in {
+    animation: billCardEnter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation-fill-mode: both;
+  }
+
+  /* Skeleton loading with Texas theme */
+  .skeleton-texas {
+    animation: texasPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background: linear-gradient(
+      90deg,
+      var(--gray-200) 25%,
+      var(--texas-blue-lightest) 50%,
+      var(--gray-200) 75%
+    );
+    background-size: 200% 100%;
+  }
+}  /* Bill
+ Detail Page Components - Texas Theme */
+  .main-content {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8;
+  }
+
+  /* Loading State for Bill Detail Pages */
+  .loading-state {
+    @apply text-center py-12 sm:py-16;
+  }
+
+  .loading-card {
+    @apply inline-flex items-center px-6 py-4 font-semibold shadow-lg rounded-xl;
+    background-color: var(--texas-white);
+    border: 2px solid var(--texas-blue-lightest);
+    color: var(--texas-blue);
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .loading-spinner {
+    @apply animate-spin -ml-1 mr-3 h-6 w-6;
+    color: var(--texas-blue);
+  }
+
+  .loading-text {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--texas-blue);
+  }
+
+  /* Bill Detail Container */
+  .bill-detail-container {
+    @apply space-y-6 sm:space-y-8;
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  /* Bill Detail Grid Layout */
+  .bill-detail-grid {
+    @apply grid gap-6 sm:gap-8;
+    @apply grid-cols-1 lg:grid-cols-3;
+  }
+
+  .bill-detail-main {
+    @apply lg:col-span-2 space-y-6 sm:space-y-8;
+  }
+
+  .bill-detail-sidebar {
+    @apply space-y-6 sm:space-y-8;
+  }
+
+  /* Bill Detail Card Components */
+  .bill-detail-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8;
+    @apply hover:shadow-md transition-all duration-200;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .bill-detail-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--texas-blue-lightest);
+    transform: translateY(-2px);
+  }
+
+  /* Specific Bill Detail Card Types */
+  .bill-header-card {
+    border-left: 4px solid var(--texas-blue);
+    background: linear-gradient(135deg, var(--texas-white) 0%, #f8fafc 100%);
+  }
+
+  .summary-card {
+    border-left: 4px solid var(--texas-red);
+  }
+
+  .news-card {
+    border-left: 4px solid var(--texas-blue-light);
+  }
+
+  .sponsor-card {
+    border-left: 4px solid var(--success);
+  }
+
+  .official-link-card {
+    border-left: 4px solid var(--warning);
+  }
+
+  /* Navigation Breadcrumb */
+  .nav-breadcrumb {
+    @apply text-gray-500 text-sm font-medium;
+    color: var(--gray-500);
+  }
+
+  .nav-brand-link {
+    @apply flex items-center text-texas-blue hover:text-texas-red transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-texas-blue focus:ring-offset-2 rounded-md p-1;
+  }
+
+  /* Error State for Bill Detail Pages */
+  .error-state {
+    @apply text-center py-12 sm:py-16;
+  }
+
+  .error-container {
+    @apply max-w-lg mx-auto;
+  }
+
+  .error-card {
+    @apply rounded-xl p-6 sm:p-8;
+    background-color: #fef2f2;
+    border: 2px solid #fecaca;
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+  }
+
+  .error-icon {
+    @apply mx-auto h-16 w-16 mb-4;
+    color: var(--texas-red);
+  }
+
+  .error-title {
+    @apply text-lg font-semibold mb-2;
+    color: var(--texas-red-dark);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+  }
+
+  .error-message {
+    @apply text-sm mb-6 leading-relaxed;
+    color: var(--texas-red);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+  }
+
+  .error-actions {
+    @apply flex flex-col sm:flex-row gap-3 justify-center;
+  }
+
+  /* Secondary Button for Error Actions */
+  .btn-secondary {
+    @apply px-6 py-2 rounded-md font-medium transition-colors duration-200;
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--gray-200);
+    color: var(--gray-800);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+/* Animation Keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes heroFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroSlideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroSlideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/*
+ Additional responsive utilities for better layout */
+@layer utilities {
+  /* Responsive text sizing utilities */
+  .text-responsive-xs {
+    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  }
+
+  .text-responsive-sm {
+    font-size: clamp(0.875rem, 2vw, 1rem);
+  }
+
+  .text-responsive-base {
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 3vw, 1.25rem);
+  }
+
+  .text-responsive-xl {
+    font-size: clamp(1.25rem, 3.5vw, 1.5rem);
+  }
+
+  .text-responsive-2xl {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+  }
+
+  .text-responsive-3xl {
+    font-size: clamp(1.875rem, 5vw, 2.5rem);
+  }
+
+  /* Screen reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Skip link for accessibility */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--texas-blue);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    transition: top 0.3s;
+  }
+
+  .skip-link:focus {
+    top: 6px;
+  }
+
+  /* Enhanced responsive bill grid */
+  .bill-grid-responsive {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  @media (min-width: 640px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .bill-grid-responsive {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2.5rem;
+    }
   }
 }

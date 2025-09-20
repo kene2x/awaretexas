@@ -836,6 +836,256 @@ class TexasLegislatureScraper {
   }
 
   /**
+   * Scrape voting data for a specific bill
+   * @param {string} billNumber - Standardized bill number (e.g., "SB1")
+   * @returns {Promise<Object>} Voting data object
+   */
+  async scrapeVotingData(billNumber) {
+    try {
+      console.log(`🗳️ Scraping voting data for ${billNumber}...`);
+      
+      if (!cheerio) {
+        throw new AppError('Cheerio not available in test environment', 'SCRAPING_ERROR');
+      }
+      
+      // Try different session numbers for voting records
+      const sessions = ['89R', '88R', '87R'];
+      
+      for (const session of sessions) {
+        try {
+          // Try the Actions page which often contains voting information
+          const actionsUrl = `https://capitol.texas.gov/BillLookup/Actions.aspx?LegSess=${session}&Bill=${billNumber}`;
+          console.log(`🔗 Trying Actions URL: ${actionsUrl}`);
+          
+          const response = await axios.get(actionsUrl, {
+            ...this.axiosConfig,
+            timeout: 15000
+          });
+          
+          if (response.status === 200 && response.data) {
+            const $ = cheerio.load(response.data);
+            
+            // Look for voting tables or vote records
+            const votingData = this.parseVotingFromActions($, billNumber);
+            
+            if (votingData && (votingData.votes.length > 0 || votingData.summary)) {
+              console.log(`✅ Found voting data for ${billNumber} in session ${session}`);
+              return votingData;
+            }
+          }
+        } catch (sessionError) {
+          console.log(`No voting data found for ${billNumber} in session ${session}`);
+        }
+        
+        // Also try the History page which might have vote records
+        try {
+          const historyUrl = `https://capitol.texas.gov/BillLookup/History.aspx?LegSess=${session}&Bill=${billNumber}`;
+          console.log(`🔗 Trying History URL: ${historyUrl}`);
+          
+          const response = await axios.get(historyUrl, {
+            ...this.axiosConfig,
+            timeout: 15000
+          });
+          
+          if (response.status === 200 && response.data) {
+            const $ = cheerio.load(response.data);
+            
+            // Look for voting information in history
+            const votingData = this.parseVotingFromHistory($, billNumber);
+            
+            if (votingData && (votingData.votes.length > 0 || votingData.summary)) {
+              console.log(`✅ Found voting data in history for ${billNumber} in session ${session}`);
+              return votingData;
+            }
+          }
+        } catch (historyError) {
+          console.log(`No voting data in history for ${billNumber} in session ${session}`);
+        }
+      }
+      
+      // Return empty voting data if nothing found
+      return {
+        billNumber: billNumber,
+        votes: [],
+        summary: null,
+        lastUpdated: new Date(),
+        source: 'texas_legislature'
+      };
+      
+    } catch (error) {
+      console.error(`Error scraping voting data for ${billNumber}:`, error.message);
+      return {
+        billNumber: billNumber,
+        votes: [],
+        summary: null,
+        error: error.message,
+        lastUpdated: new Date(),
+        source: 'texas_legislature'
+      };
+    }
+  }
+
+  /**
+   * Parse voting data from Actions page
+   * @param {Object} $ - Cheerio instance
+   * @param {string} billNumber - Bill number
+   * @returns {Object|null} Voting data or null
+   */
+  parseVotingFromActions($, billNumber) {
+    try {
+      const votes = [];
+      let summary = null;
+      
+      // Look for vote records in tables
+      $('table').each((index, table) => {
+        const $table = $(table);
+        const tableText = $table.text().toLowerCase();
+        
+        // Check if this table contains voting information
+        if (tableText.includes('vote') || tableText.includes('yea') || tableText.includes('nay')) {
+          
+          // Extract vote information from table rows
+          $table.find('tr').each((rowIndex, row) => {
+            const $row = $(row);
+            const rowText = $row.text().trim();
+            
+            // Look for vote patterns
+            const voteMatch = rowText.match(/(yea|aye|yes|nay|no|present|absent):\s*(\d+)/gi);
+            if (voteMatch) {
+              const voteDate = this.extractDateFromAction(rowText);
+              const chamber = this.extractChamberFromText(rowText);
+              
+              const voteRecord = {
+                date: voteDate || new Date(),
+                chamber: chamber || 'Senate',
+                votes: {},
+                description: rowText.substring(0, 100) + '...'
+              };
+              
+              // Parse individual vote counts
+              voteMatch.forEach(match => {
+                const [, type, count] = match.match(/(yea|aye|yes|nay|no|present|absent):\s*(\d+)/i) || [];
+                if (type && count) {
+                  const normalizedType = this.normalizeVoteType(type);
+                  voteRecord.votes[normalizedType] = parseInt(count);
+                }
+              });
+              
+              // Only add if we have meaningful vote data
+              if (Object.keys(voteRecord.votes).length > 0) {
+                votes.push(voteRecord);
+              }
+            }
+          });
+        }
+      });
+      
+      // Look for summary vote information
+      const bodyText = $('body').text();
+      const summaryMatch = bodyText.match(/final\s+vote[:\s]*([^.]+)/i);
+      if (summaryMatch) {
+        summary = summaryMatch[1].trim();
+      }
+      
+      return votes.length > 0 || summary ? {
+        billNumber: billNumber,
+        votes: votes,
+        summary: summary,
+        lastUpdated: new Date(),
+        source: 'texas_legislature_actions'
+      } : null;
+      
+    } catch (error) {
+      console.warn(`Error parsing voting data from actions for ${billNumber}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Parse voting data from History page
+   * @param {Object} $ - Cheerio instance
+   * @param {string} billNumber - Bill number
+   * @returns {Object|null} Voting data or null
+   */
+  parseVotingFromHistory($, billNumber) {
+    try {
+      const votes = [];
+      let summary = null;
+      
+      // Look for action items that mention voting
+      $('.action-item, .history-item, tr').each((index, element) => {
+        const $element = $(element);
+        const text = $element.text().toLowerCase();
+        
+        if (text.includes('vote') || text.includes('passed') || text.includes('failed')) {
+          const fullText = $element.text().trim();
+          
+          // Extract vote counts if present
+          const votePattern = /(\d+)\s*-\s*(\d+)(?:\s*-\s*(\d+))?/;
+          const voteMatch = fullText.match(votePattern);
+          
+          if (voteMatch) {
+            const [, yeas, nays, present] = voteMatch;
+            const voteDate = this.extractDateFromAction(fullText);
+            const chamber = this.extractChamberFromText(fullText);
+            
+            const voteRecord = {
+              date: voteDate || new Date(),
+              chamber: chamber || 'Senate',
+              votes: {
+                yea: parseInt(yeas) || 0,
+                nay: parseInt(nays) || 0,
+                present: parseInt(present) || 0
+              },
+              description: fullText.substring(0, 100) + '...'
+            };
+            
+            votes.push(voteRecord);
+          }
+        }
+      });
+      
+      return votes.length > 0 ? {
+        billNumber: billNumber,
+        votes: votes,
+        summary: summary,
+        lastUpdated: new Date(),
+        source: 'texas_legislature_history'
+      } : null;
+      
+    } catch (error) {
+      console.warn(`Error parsing voting data from history for ${billNumber}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Extract chamber (Senate/House) from text
+   * @param {string} text - Text to analyze
+   * @returns {string} Chamber name
+   */
+  extractChamberFromText(text) {
+    const textLower = text.toLowerCase();
+    if (textLower.includes('senate')) return 'Senate';
+    if (textLower.includes('house')) return 'House';
+    return 'Senate'; // Default for Senate bills
+  }
+
+  /**
+   * Normalize vote type names
+   * @param {string} voteType - Raw vote type
+   * @returns {string} Normalized vote type
+   */
+  normalizeVoteType(voteType) {
+    const type = voteType.toLowerCase();
+    if (type === 'yea' || type === 'aye' || type === 'yes') return 'yea';
+    if (type === 'nay' || type === 'no') return 'nay';
+    if (type === 'present') return 'present';
+    if (type === 'absent') return 'absent';
+    return type;
+  }
+
+  /**
    * Extract committee information
    * @param {Object} $ - Cheerio instance
    * @returns {string} Committee name
@@ -1033,4 +1283,4 @@ class TexasLegislatureScraper {
   }
 }
 
-module.exports = TexasLegislatureScraper;
+module.exports = { TexasLegislatureScraper };

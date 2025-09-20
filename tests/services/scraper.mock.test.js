@@ -80,7 +80,7 @@ jest.mock('cheerio', () => ({
   })
 }));
 
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 
 describe('TexasLegislatureScraper - Mocked Integration Tests', () => {
   let scraper;

@@ -4,7 +4,7 @@
  * Run with: node tests/services/scraper.demo.js
  */
 
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 
 async function demonstrateScraper() {
   console.log('=== Texas Legislature Scraper Demonstration ===\n');

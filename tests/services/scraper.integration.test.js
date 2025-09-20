@@ -1,4 +1,4 @@
-const TexasLegislatureScraper = require('../../services/scraper');
+const { TexasLegislatureScraper } = require('../../services/scraper');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');

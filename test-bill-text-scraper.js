@@ -1,6 +1,6 @@
 // Test bill text scraping from Texas Legislature website
 require('dotenv').config();
-const TexasLegislatureScraper = require('./services/scraper');
+const { TexasLegislatureScraper } = require('./services/scraper');
 
 async function testBillTextScraping() {
   try {

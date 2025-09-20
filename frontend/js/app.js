@@ -39,6 +39,9 @@ class BillTracker {
             // Show live search indicator
             this.showLiveSearchIndicator();
             
+            // Update ARIA attributes for screen readers
+            this.searchInput.setAttribute('aria-expanded', 'true');
+            
             searchTimeout = setTimeout(() => {
                 const searchTerm = e.target.value.toLowerCase().trim();
                 
@@ -55,6 +58,7 @@ class BillTracker {
                         this.renderBills();
                         this.updateResultsSummary();
                         this.hideLiveSearchIndicator();
+                        this.announceSearchResults();
                         return;
                     }
                 }
@@ -62,6 +66,7 @@ class BillTracker {
                 this.filters.search = searchTerm;
                 this.applyFiltersWithAnimation();
                 this.hideLiveSearchIndicator();
+                this.announceSearchResults();
             }, 300); // Slightly longer delay for better performance
         });
 
@@ -93,21 +98,46 @@ class BillTracker {
         // Update clear button visibility based on active filters
         this.updateClearButtonState();
 
-        // Add keyboard shortcuts for better UX
+        // Enhanced keyboard shortcuts for better accessibility
         document.addEventListener('keydown', (e) => {
             // Escape key clears search
             if (e.key === 'Escape' && document.activeElement === this.searchInput) {
                 this.searchInput.value = '';
                 this.filters.search = '';
                 this.applyFiltersWithAnimation();
+                this.announceToScreenReader('Search cleared');
             }
             
             // Ctrl/Cmd + K focuses search
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
                 this.searchInput.focus();
+                this.announceToScreenReader('Search input focused');
+            }
+            
+            // Arrow key navigation for bill cards
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                const billCards = document.querySelectorAll('.bill-card-component');
+                const currentFocus = document.activeElement;
+                const currentIndex = Array.from(billCards).indexOf(currentFocus);
+                
+                if (currentIndex !== -1) {
+                    e.preventDefault();
+                    let nextIndex;
+                    
+                    if (e.key === 'ArrowDown') {
+                        nextIndex = (currentIndex + 1) % billCards.length;
+                    } else {
+                        nextIndex = (currentIndex - 1 + billCards.length) % billCards.length;
+                    }
+                    
+                    billCards[nextIndex].focus();
+                }
             }
         });
+
+        // Initialize section animations and intersection observer
+        this.initializeSectionAnimations();
     }
 
     async loadBills() {
@@ -370,6 +400,36 @@ class BillTracker {
         }, 3000);
     }
 
+    initializeSectionAnimations() {
+        // Initialize intersection observer for section animations
+        if ('IntersectionObserver' in window) {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('section-animate-in');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            // Observe sections that should animate in
+            const sectionsToObserve = document.querySelectorAll('main, .search-section');
+            sectionsToObserve.forEach(section => {
+                if (!section.classList.contains('section-animate-in')) {
+                    observer.observe(section);
+                }
+            });
+        }
+
+        // Add smooth scroll behavior for better transitions
+        document.documentElement.style.scrollBehavior = 'smooth';
+    }
+
     populateFilterOptions() {
         // Populate topics dropdown from actual bill data
         const topics = [...new Set(this.bills.flatMap(bill => 
@@ -547,6 +607,41 @@ class BillTracker {
         }
         this.searchInput.style.borderColor = '';
         this.searchInput.style.boxShadow = '';
+        this.searchInput.setAttribute('aria-expanded', 'false');
+    }
+
+    // Announce search results to screen readers
+    announceSearchResults() {
+        const count = this.filteredBills.length;
+        const hasFilters = this.filters.search || this.filters.topics.length > 0 || 
+                          this.filters.sponsors.length > 0 || this.filters.status;
+        
+        let message = `${count} bill${count !== 1 ? 's' : ''} found`;
+        if (hasFilters) {
+            message += ' matching your search criteria';
+        }
+        
+        this.announceToScreenReader(message);
+    }
+
+    // Announce messages to screen readers
+    announceToScreenReader(message) {
+        // Create or update live region for announcements
+        let liveRegion = document.getElementById('sr-announcements');
+        if (!liveRegion) {
+            liveRegion = document.createElement('div');
+            liveRegion.id = 'sr-announcements';
+            liveRegion.className = 'sr-only';
+            liveRegion.setAttribute('aria-live', 'polite');
+            liveRegion.setAttribute('aria-atomic', 'true');
+            document.body.appendChild(liveRegion);
+        }
+        
+        // Clear and set new message
+        liveRegion.textContent = '';
+        setTimeout(() => {
+            liveRegion.textContent = message;
+        }, 100);
     }
 
     showFilteringState() {
@@ -612,21 +707,23 @@ class BillTracker {
         this.filteredBills.forEach((bill, index) => {
             const billCard = this.createBillCard(bill);
             
-            // Add staggered animation
+            // Add enhanced staggered animation with Texas theme
+            billCard.classList.add('bill-card-animate-in');
+            billCard.style.animationDelay = `${index * 75}ms`;
             billCard.style.opacity = '0';
-            billCard.style.transform = 'translateY(20px)';
-            billCard.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
             
             fragment.appendChild(billCard);
             
-            // Trigger animation after a short delay
+            // Trigger animation after DOM insertion
             setTimeout(() => {
                 billCard.style.opacity = '1';
-                billCard.style.transform = 'translateY(0)';
-            }, index * 50 + 50);
+            }, 50);
         });
         
         this.billGridElement.appendChild(fragment);
+        
+        // Add section transition animation to the grid container
+        this.billGridElement.classList.add('section-animate-in');
     }
 
     /**
@@ -719,14 +816,33 @@ class BillTracker {
     }
 
     createBillCard(bill) {
-        const card = document.createElement('div');
+        const card = document.createElement('article');
         card.className = 'bill-card-component bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer animate-fade-in';
         
-        // Color-coded status mapping for BillCard component
+        // Add accessibility attributes
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        
+        const billTitle = bill.shortTitle || bill.fullTitle || 'Untitled Bill';
+        const meaningfulName = this.generateMeaningfulName(bill);
+        
+        card.setAttribute('aria-label', `${bill.billNumber}: ${billTitle}. Status: ${bill.status}. Click to view details.`);
+        card.setAttribute('aria-describedby', `bill-${bill.billNumber}-summary`);
+        
+        // Add keyboard navigation support
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                card.click();
+                this.announceToScreenReader(`Opening details for ${bill.billNumber}`);
+            }
+        });
+        
+        // Enhanced status mapping using Texas flag color system
         const statusColors = {
-            'Filed': 'bg-yellow-50 text-yellow-800 border-yellow-300',
-            'In Committee': 'bg-blue-50 text-blue-800 border-blue-300', 
-            'Passed': 'bg-green-50 text-green-800 border-green-300'
+            'Filed': 'status-filed',
+            'In Committee': 'status-committee', 
+            'Passed': 'status-passed'
         };
         
         const statusColor = statusColors[bill.status] || 'bg-gray-50 text-gray-700 border-gray-300';
@@ -739,39 +855,39 @@ class BillTracker {
         const primarySponsor = bill.sponsors && bill.sponsors.length > 0 ? 
             (bill.sponsors[0].name || bill.sponsors[0]) : 'Unknown';
 
-        // Generate meaningful name from bill title
-        const meaningfulName = this.generateMeaningfulName(bill);
-
         card.innerHTML = `
             <div class="flex items-start justify-between mb-3 sm:mb-4">
                 <div class="flex-1">
-                    <h3 class="heading-secondary text-base sm:text-lg mb-2">${meaningfulName}</h3>
+                    <h3 class="text-heading-3 text-texas-blue font-bold mb-2 leading-tight" role="heading" aria-level="3">${meaningfulName}</h3>
                     <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${bill.billNumber}</span>
-                        <span class="status-badge ${statusColor}">
-                            ${bill.status === 'Filed' ? '📄' : bill.status === 'In Committee' ? '🏛️' : bill.status === 'Passed' ? '✅' : '📋'} ${bill.status}
+                        <span class="text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border" role="text" aria-label="Bill number">${bill.billNumber}</span>
+                        <span class="status-badge ${statusColor}" role="status" aria-label="Bill status: ${bill.status}">
+                            <span aria-hidden="true">${bill.status === 'Filed' ? '📄' : bill.status === 'In Committee' ? '🏛️' : bill.status === 'Passed' ? '✅' : '📋'}</span> ${bill.status}
                         </span>
                     </div>
                 </div>
             </div>
             
-            <h4 class="text-body font-medium text-gray-900 mb-2 sm:mb-3 line-clamp-2">
+            <h4 class="text-body-lg font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2 leading-snug" role="heading" aria-level="4">
                 ${bill.shortTitle || bill.fullTitle}
             </h4>
             
-            <p class="text-caption text-gray-600 mb-3 sm:mb-4 line-clamp-3 hover-preview leading-relaxed">
+            <p id="bill-${bill.billNumber}-summary" class="text-body text-gray-600 mb-3 sm:mb-4 line-clamp-3 hover-preview leading-relaxed" role="text">
                 ${preview}
             </p>
             
-            <div class="flex items-center justify-between text-caption text-gray-500 pt-2 border-t border-gray-100">
-                <span class="flex items-center">
-                    <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <div class="flex items-center justify-between text-body-sm text-gray-500 pt-3 border-t border-gray-200">
+                <span class="flex items-center font-medium" role="text" aria-label="Primary sponsor: ${primarySponsor}">
+                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
                     ${primarySponsor}
                 </span>
-                <span class="text-texas-blue hover:text-blue-700 font-medium transition-colors">
-                    View Details →
+                <span class="text-texas-blue hover:text-texas-red font-semibold transition-colors duration-200 flex items-center" role="text" aria-label="Click to view bill details">
+                    View Details
+                    <svg class="w-4 h-4 ml-1 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
                 </span>
             </div>
         `;
@@ -805,17 +921,14 @@ class BillTracker {
             this.hideHoverPreview();
         });
 
-        // Make card keyboard accessible
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'button');
-        card.setAttribute('aria-label', `View details for ${bill.billNumber}: ${bill.shortTitle || bill.fullTitle}`);
+        // Enhanced keyboard and focus accessibility
+        card.addEventListener('focus', () => {
+            this.showHoverPreview(card, bill, preview);
+            this.announceToScreenReader(`Focused on ${bill.billNumber}: ${billTitle}`);
+        });
 
-        // Add keyboard navigation
-        card.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                card.click();
-            }
+        card.addEventListener('blur', () => {
+            this.hideHoverPreview();
         });
 
         // Add click handler for navigation to detail page
@@ -833,9 +946,13 @@ class BillTracker {
         // Remove any existing preview
         this.hideHoverPreview();
         
-        // Create enhanced tooltip with better content
+        // Create enhanced tooltip with Texas design system
         const tooltip = document.createElement('div');
-        tooltip.className = 'bill-preview-tooltip absolute z-50 bg-gray-900 text-white p-4 rounded-lg shadow-xl max-w-sm border border-gray-700';
+        tooltip.className = 'bill-preview-tooltip absolute z-50 bg-gray-900 text-white p-4 rounded-xl shadow-xl max-w-sm border border-gray-700';
+        tooltip.style.borderRadius = 'var(--radius-xl)';
+        tooltip.style.boxShadow = 'var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.1)';
+        tooltip.style.backdropFilter = 'blur(12px)';
+        tooltip.style.background = 'linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%)';
         
         // Create 1-2 sentence summary as required
         const summary = this.generatePreviewSummary(bill);
@@ -845,11 +962,17 @@ class BillTracker {
             (bill.sponsors[0].name || bill.sponsors[0]) : 'Unknown';
         
         tooltip.innerHTML = `
-            <div class="text-sm font-semibold mb-2 text-blue-200">${bill.billNumber}</div>
-            <div class="text-xs text-gray-300 leading-relaxed mb-2">${summary}</div>
-            <div class="text-xs text-gray-400 space-y-1">
-                <div>Status: <span class="font-medium text-white">${bill.status}</span></div>
-                <div>Sponsor: <span class="font-medium text-white">${sponsorInfo}</span></div>
+            <div class="text-sm font-bold mb-2 text-white" style="color: var(--texas-white); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);">${bill.billNumber}</div>
+            <div class="text-xs text-gray-200 leading-relaxed mb-3" style="line-height: 1.6;">${summary}</div>
+            <div class="text-xs text-gray-300 space-y-2">
+                <div class="flex justify-between items-center">
+                    <span>Status:</span> 
+                    <span class="font-semibold px-2 py-1 rounded-full text-xs" style="background-color: var(--texas-blue-light); color: var(--texas-white);">${bill.status}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Sponsor:</span> 
+                    <span class="font-medium text-white truncate ml-2" style="color: var(--texas-white);">${sponsorInfo}</span>
+                </div>
             </div>
         `;
         
@@ -966,6 +1089,13 @@ class BillTracker {
         }
         
         this.resultsSummaryElement.classList.remove('hidden');
+        
+        // Update ARIA label for results summary for screen readers
+        const resultsText = document.getElementById('results-text');
+        if (resultsText) {
+            const summaryText = `${filteredCount} bill${filteredCount !== 1 ? 's' : ''} ${hasActiveFilters ? 'found matching your search criteria' : 'available'}`;
+            resultsText.setAttribute('aria-label', summaryText);
+        }
         
         // Update clear button state
         this.updateClearButtonState();
@@ -1119,4 +1249,92 @@ document.addEventListener('DOMContentLoaded', function() {
         // Prevent the default browser error handling
         event.preventDefault();
     });
+});
+// Mobile Navigation Handler for AWARE TEXAS Header
+class MobileNavigation {
+    constructor() {
+        this.mobileNavToggle = document.getElementById('mobile-nav-toggle');
+        this.mobileNavMenu = document.getElementById('mobile-nav-menu');
+        this.isOpen = false;
+        
+        this.bindEvents();
+    }
+    
+    bindEvents() {
+        if (this.mobileNavToggle && this.mobileNavMenu) {
+            this.mobileNavToggle.addEventListener('click', () => {
+                this.toggleMenu();
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (this.isOpen && 
+                    !this.mobileNavMenu.contains(e.target) && 
+                    !this.mobileNavToggle.contains(e.target)) {
+                    this.closeMenu();
+                }
+            });
+            
+            // Close menu on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isOpen) {
+                    this.closeMenu();
+                }
+            });
+            
+            // Close menu when window is resized to desktop size
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 640 && this.isOpen) { // sm breakpoint
+                    this.closeMenu();
+                }
+            });
+        }
+    }
+    
+    toggleMenu() {
+        if (this.isOpen) {
+            this.closeMenu();
+        } else {
+            this.openMenu();
+        }
+    }
+    
+    openMenu() {
+        this.isOpen = true;
+        this.mobileNavMenu.classList.remove('hidden');
+        this.mobileNavMenu.classList.add('visible');
+        
+        // Update button icon to X
+        this.mobileNavToggle.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        `;
+        
+        // Update ARIA attributes
+        this.mobileNavToggle.setAttribute('aria-expanded', 'true');
+        this.mobileNavMenu.setAttribute('aria-hidden', 'false');
+    }
+    
+    closeMenu() {
+        this.isOpen = false;
+        this.mobileNavMenu.classList.remove('visible');
+        this.mobileNavMenu.classList.add('hidden');
+        
+        // Update button icon to hamburger
+        this.mobileNavToggle.innerHTML = `
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        `;
+        
+        // Update ARIA attributes
+        this.mobileNavToggle.setAttribute('aria-expanded', 'false');
+        this.mobileNavMenu.setAttribute('aria-hidden', 'true');
+    }
+}
+
+// Initialize mobile navigation when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new MobileNavigation();
 });

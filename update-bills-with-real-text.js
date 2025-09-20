@@ -1,6 +1,6 @@
 // Update test bills with real bill text from Texas Legislature
 require('dotenv').config();
-const TexasLegislatureScraper = require('./services/scraper');
+const { TexasLegislatureScraper } = require('./services/scraper');
 const { billDatabase } = require('./config/bill-database');
 const { databaseService } = require('./config/database');
 

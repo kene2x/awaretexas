@@ -6,34 +6,34 @@ class LoadingManager {
     }
 
     /**
-     * Create skeleton screen for bill cards
+     * Create skeleton screen for bill cards with Texas theme
      */
     createBillCardSkeleton() {
         const skeleton = document.createElement('div');
-        skeleton.className = 'bill-card-skeleton bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse';
+        skeleton.className = 'bill-card-skeleton bg-white rounded-lg shadow-sm border border-gray-200 p-6 skeleton-texas';
         
         skeleton.innerHTML = `
             <div class="flex items-start justify-between mb-4">
                 <div class="flex-1">
-                    <div class="h-5 bg-gray-200 rounded w-24 mb-2"></div>
-                    <div class="h-6 bg-gray-200 rounded w-32"></div>
+                    <div class="h-5 skeleton-texas rounded w-24 mb-2"></div>
+                    <div class="h-6 skeleton-texas rounded w-32"></div>
                 </div>
             </div>
             
             <div class="space-y-2 mb-4">
-                <div class="h-4 bg-gray-200 rounded w-full"></div>
-                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-4 skeleton-texas rounded w-full"></div>
+                <div class="h-4 skeleton-texas rounded w-3/4"></div>
             </div>
             
             <div class="space-y-2 mb-4">
-                <div class="h-3 bg-gray-200 rounded w-full"></div>
-                <div class="h-3 bg-gray-200 rounded w-5/6"></div>
-                <div class="h-3 bg-gray-200 rounded w-4/5"></div>
+                <div class="h-3 skeleton-texas rounded w-full"></div>
+                <div class="h-3 skeleton-texas rounded w-5/6"></div>
+                <div class="h-3 skeleton-texas rounded w-4/5"></div>
             </div>
             
             <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-                <div class="h-3 bg-gray-200 rounded w-20"></div>
-                <div class="h-3 bg-gray-200 rounded w-16"></div>
+                <div class="h-3 skeleton-texas rounded w-20"></div>
+                <div class="h-3 skeleton-texas rounded w-16"></div>
             </div>
         `;
         
@@ -41,26 +41,26 @@ class LoadingManager {
     }
 
     /**
-     * Create skeleton screen for bill detail page
+     * Create skeleton screen for bill detail page with Texas theme
      */
     createBillDetailSkeleton() {
         return `
-            <div class="animate-pulse">
+            <div class="section-animate-in">
                 <!-- Header Skeleton -->
                 <div class="mb-8">
                     <div class="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
                         <div class="flex-1">
                             <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-4">
-                                <div class="h-8 bg-gray-200 rounded w-32"></div>
-                                <div class="h-6 bg-gray-200 rounded w-24"></div>
+                                <div class="h-8 skeleton-texas rounded w-32"></div>
+                                <div class="h-6 skeleton-texas rounded w-24"></div>
                             </div>
                             <div class="space-y-2 mb-4">
-                                <div class="h-5 bg-gray-200 rounded w-full"></div>
-                                <div class="h-5 bg-gray-200 rounded w-3/4"></div>
+                                <div class="h-5 skeleton-texas rounded w-full"></div>
+                                <div class="h-5 skeleton-texas rounded w-3/4"></div>
                             </div>
                             <div class="flex flex-wrap gap-4">
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                                <div class="h-4 bg-gray-200 rounded w-28"></div>
+                                <div class="h-4 skeleton-texas rounded w-24"></div>
+                                <div class="h-4 skeleton-texas rounded w-28"></div>
                             </div>
                         </div>
                     </div>
@@ -72,11 +72,11 @@ class LoadingManager {
                     <div class="lg:col-span-1">
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div class="text-center">
-                                <div class="h-5 bg-gray-200 rounded w-32 mx-auto mb-4"></div>
-                                <div class="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-3"></div>
-                                <div class="h-5 bg-gray-200 rounded w-24 mx-auto mb-1"></div>
-                                <div class="h-4 bg-gray-200 rounded w-20 mx-auto mb-1"></div>
-                                <div class="h-4 bg-gray-200 rounded w-16 mx-auto"></div>
+                                <div class="h-5 skeleton-texas rounded w-32 mx-auto mb-4"></div>
+                                <div class="w-20 h-20 skeleton-texas rounded-full mx-auto mb-3"></div>
+                                <div class="h-5 skeleton-texas rounded w-24 mx-auto mb-1"></div>
+                                <div class="h-4 skeleton-texas rounded w-20 mx-auto mb-1"></div>
+                                <div class="h-4 skeleton-texas rounded w-16 mx-auto"></div>
                             </div>
                         </div>
                     </div>
@@ -86,29 +86,29 @@ class LoadingManager {
                         <!-- Summary Skeleton -->
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div class="flex items-center justify-between mb-4">
-                                <div class="h-5 bg-gray-200 rounded w-32"></div>
-                                <div class="h-6 bg-gray-200 rounded w-24"></div>
+                                <div class="h-5 skeleton-texas rounded w-32"></div>
+                                <div class="h-6 skeleton-texas rounded w-24"></div>
                             </div>
                             <div class="space-y-3">
-                                <div class="h-4 bg-gray-200 rounded w-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-                                <div class="h-4 bg-gray-200 rounded w-4/5"></div>
+                                <div class="h-4 skeleton-texas rounded w-full"></div>
+                                <div class="h-4 skeleton-texas rounded w-5/6"></div>
+                                <div class="h-4 skeleton-texas rounded w-4/5"></div>
                             </div>
                         </div>
 
                         <!-- News Skeleton -->
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                             <div class="flex items-center justify-between mb-4">
-                                <div class="h-5 bg-gray-200 rounded w-24"></div>
-                                <div class="h-4 bg-gray-200 rounded w-16"></div>
+                                <div class="h-5 skeleton-texas rounded w-24"></div>
+                                <div class="h-4 skeleton-texas rounded w-16"></div>
                             </div>
                             <div class="space-y-4">
                                 ${Array(3).fill(0).map(() => `
                                     <div class="border border-gray-200 rounded-lg p-4">
-                                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                        <div class="h-4 skeleton-texas rounded w-3/4 mb-2"></div>
                                         <div class="flex items-center justify-between">
-                                            <div class="h-3 bg-gray-200 rounded w-20"></div>
-                                            <div class="h-3 bg-gray-200 rounded w-16"></div>
+                                            <div class="h-3 skeleton-texas rounded w-20"></div>
+                                            <div class="h-3 skeleton-texas rounded w-16"></div>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -121,18 +121,20 @@ class LoadingManager {
     }
 
     /**
-     * Show skeleton loading for bill grid
+     * Show skeleton loading for bill grid with staggered animation
      */
     showBillGridSkeleton(container, count = 12) {
         container.innerHTML = '';
         container.classList.remove('hidden');
+        container.classList.add('section-animate-in');
         
         const fragment = document.createDocumentFragment();
         
         for (let i = 0; i < count; i++) {
             const skeleton = this.createBillCardSkeleton();
-            // Stagger the animation slightly
-            skeleton.style.animationDelay = `${i * 50}ms`;
+            // Stagger the animation for smooth entrance
+            skeleton.style.animationDelay = `${i * 75}ms`;
+            skeleton.classList.add('bill-card-animate-in');
             fragment.appendChild(skeleton);
         }
         
@@ -148,18 +150,25 @@ class LoadingManager {
     }
 
     /**
-     * Create inline loading spinner
+     * Create inline loading spinner with Texas theme
      */
     createSpinner(size = 'medium', color = 'texas-blue') {
         const sizeClasses = {
-            small: 'w-4 h-4',
-            medium: 'w-6 h-6',
-            large: 'w-8 h-8'
+            small: 'loading-spinner-small',
+            medium: 'loading-spinner-texas',
+            large: 'w-8 h-8 loading-spinner-texas'
         };
         
         const spinner = document.createElement('div');
-        spinner.className = `inline-block ${sizeClasses[size]} animate-spin`;
+        spinner.className = `inline-block ${sizeClasses[size]}`;
         
+        // Use the new Texas-themed spinner animation
+        if (size === 'small' || size === 'medium' || size === 'large') {
+            return spinner;
+        }
+        
+        // Fallback to SVG spinner for custom colors
+        spinner.className = `inline-block animate-spin`;
         spinner.innerHTML = `
             <svg class="w-full h-full text-${color}" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
