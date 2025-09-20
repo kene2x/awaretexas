@@ -80,12 +80,18 @@
 
   html {
     @apply scroll-smooth;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
   
   body {
     @apply font-sans antialiased;
     color: var(--gray-900);
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
   
   /* Improved focus styles for accessibility */
@@ -722,40 +728,47 @@
     background: linear-gradient(135deg, #002868 0%, #0369a1 100%);
   }
   
-  /* Hero Section Component - AWARE TEXAS Branding with Enhanced Responsive Design */
+  /* Hero Section Component - Full Screen */
   .hero-section {
-    @apply relative flex items-center justify-center overflow-hidden;
-    background: linear-gradient(135deg, var(--texas-blue) 0%, var(--texas-blue-light) 100%);
-    /* Mobile-first responsive height */
-    min-height: 50vh;
-    padding: 2rem 0;
+    @apply relative w-full;
+    background: transparent;
+    /* Full viewport height - entire screen */
+    height: 100vh;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
   }
 
   @media (min-width: 640px) {
     .hero-section {
-      min-height: 55vh;
-      padding: 3rem 0;
+      height: 100vh;
+      width: 100vw;
+      padding: 0;
     }
   }
 
   @media (min-width: 768px) {
     .hero-section {
-      min-height: 60vh;
-      padding: 4rem 0;
+      height: 100vh;
+      width: 100vw;
+      padding: 0;
     }
   }
 
   @media (min-width: 1024px) {
     .hero-section {
-      min-height: 65vh;
-      padding: 5rem 0;
+      height: 100vh;
+      width: 100vw;
+      padding: 0;
     }
   }
 
   @media (min-width: 1280px) {
     .hero-section {
-      min-height: 70vh;
-      padding: 6rem 0;
+      height: 100vh;
+      width: 100vw;
+      padding: 0;
     }
   }
 
@@ -948,92 +961,96 @@
   
   .hero-content {
     position: relative;
-    z-index: 20;
-    text-align: center;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: block;
     animation: heroFadeIn 1.2s ease-out;
   }
 
   @media (min-width: 640px) {
     .hero-content {
-      max-width: 1400px;
-      padding: 1.5rem;
-      gap: 2rem;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
     }
   }
 
   @media (min-width: 768px) {
     .hero-content {
-      max-width: 1600px;
-      padding: 2rem;
-      gap: 2.5rem;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
     }
   }
 
   @media (min-width: 1024px) {
     .hero-content {
-      padding: 2.5rem;
-      gap: 3rem;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
     }
   }
 
   @media (min-width: 1280px) {
     .hero-content {
-      padding: 3rem;
-      gap: 3.5rem;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
     }
   }
   
   .hero-branding {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
     animation: heroSlideInDown 0.8s ease-out;
+  }
+  
+  .hero-header-image {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    object-position: center;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+    transition: all 0.3s ease-in-out;
+    display: block;
   }
 
   @media (min-width: 640px) {
-    .hero-branding {
-      gap: 0.75rem;
+    .hero-header-image {
+      width: 100vw;
+      height: 100vh;
     }
   }
 
   @media (min-width: 768px) {
-    .hero-branding {
-      gap: 1rem;
-    }
-  }
-  
-  .aware-texas-logo {
-    font-size: clamp(2rem, 8vw, 6rem);
-    font-weight: 800;
-    line-height: 0.9;
-    letter-spacing: -0.02em;
-    color: var(--texas-white);
-    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4), 1px 1px 2px rgba(0, 0, 0, 0.6);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-feature-settings: "kern" 1, "liga" 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-
-  @media (min-width: 640px) {
-    .aware-texas-logo {
-      font-size: clamp(2.5rem, 8vw, 7rem);
-      line-height: 0.85;
+    .hero-header-image {
+      width: 100vw;
+      height: 100vh;
     }
   }
 
   @media (min-width: 1024px) {
-    .aware-texas-logo {
-      font-size: clamp(3rem, 8vw, 8rem);
-      line-height: 0.8;
+    .hero-header-image {
+      width: 100vw;
+      height: 100vh;
     }
+  }
+
+  @media (min-width: 1280px) {
+    .hero-header-image {
+      width: 100vw;
+      height: 100vh;
+    }
+  }
+
+  .hero-header-image:hover {
+    transform: scale(1.005);
+    filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.3));
   }
   
   .hero-tagline {
