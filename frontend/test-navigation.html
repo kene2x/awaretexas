@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Navigation</title>
+    <link href="styles/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">Test Bill Navigation</h1>
+        
+        <div class="grid gap-4 mb-8">
+            <h2 class="text-xl font-semibold">Test Links:</h2>
+            <a href="bill-detail.html?id=SB%201" class="text-blue-600 hover:underline">SB 1 (URL encoded)</a>
+            <a href="bill-detail.html?id=SB1" class="text-blue-600 hover:underline">SB1 (no space)</a>
+            <a href="bill-detail.html?id=HB%201" class="text-blue-600 hover:underline">HB 1 (URL encoded)</a>
+            <a href="bill-detail.html?id=HB1" class="text-blue-600 hover:underline">HB1 (no space)</a>
+            <a href="bill-detail.html?id=SB%20123" class="text-blue-600 hover:underline">SB 123 (URL encoded)</a>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-semibold mb-4">API Test Results:</h2>
+            <div id="api-results" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test API endpoints
+        const testEndpoints = [
+            '/api/bills/SB%201',
+            '/api/bills/SB1', 
+            '/api/bills/HB%201',
+            '/api/bills/HB1',
+            '/api/bills/SB%20123'
+        ];
+        
+        const resultsDiv = document.getElementById('api-results');
+        
+        async function testEndpoint(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const result = document.createElement('div');
+                result.className = `p-2 rounded ${data.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                result.innerHTML = `
+                    <strong>${url}</strong>: ${data.success ? '✅ Success' : '❌ Failed'} 
+                    ${data.success ? `- ${data.data.billNumber}` : `- ${data.error}`}
+                `;
+                resultsDiv.appendChild(result);
+            } catch (error) {
+                const result = document.createElement('div');
+                result.className = 'p-2 rounded bg-red-100 text-red-800';
+                result.innerHTML = `<strong>${url}</strong>: ❌ Network Error - ${error.message}`;
+                resultsDiv.appendChild(result);
+            }
+        }
+        
+        // Test all endpoints
+        testEndpoints.forEach(testEndpoint);
+    </script>
+</body>
+</html>

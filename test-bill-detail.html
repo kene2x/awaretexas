@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Bill Detail</title>
+</head>
+<body>
+    <h1>Testing Bill Detail Navigation</h1>
+    <p>Click the link below to test bill detail page:</p>
+    <a href="frontend/bill-detail.html?id=SB%201" target="_blank">Test SB 1 Detail Page</a>
+    
+    <script>
+        // Test the API directly
+        fetch('/api/bills/SB%201')
+            .then(response => response.json())
+            .then(data => {
+                console.log('API Response:', data);
+                document.body.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                console.error('API Error:', error);
+                document.body.innerHTML += '<p style="color: red;">API Error: ' + error.message + '</p>';
+            });
+    </script>
+</body>
+</html>

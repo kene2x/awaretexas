@@ -47,6 +47,65 @@ class NewsService {
   }
 
   /**
+   * Validate article relevance using Gemini AI
+   * @param {Object} article - News article to validate
+   * @param {Object} billData - Bill data for context
+   * @returns {Promise<boolean>} True if article is relevant
+   * @private
+   */
+  async validateArticleRelevance(article, billData) {
+    try {
+      // Initialize Gemini AI if not already done
+      if (!this.genAI) {
+        const { GoogleGenerativeAI } = require('@google/generative-ai');
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) return true; // Skip validation if no API key
+        
+        this.genAI = new GoogleGenerativeAI(apiKey);
+        this.geminiModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      }
+
+      const prompt = `
+You are analyzing whether a news article is relevant to a specific Texas legislative bill.
+
+BILL INFORMATION:
+- Bill Number: ${billData.billNumber}
+- Title: ${billData.shortTitle || billData.fullTitle || 'N/A'}
+- Topics: ${billData.topics ? billData.topics.join(', ') : 'N/A'}
+
+NEWS ARTICLE:
+- Headline: ${article.title}
+- Description: ${article.description || 'N/A'}
+
+TASK: Determine if this news article is specifically about or directly related to this bill or its subject matter.
+
+CRITERIA FOR RELEVANCE:
+- Article mentions the specific bill number
+- Article discusses the same policy area/topic as the bill
+- Article covers legislative activity related to the bill's subject
+- Article discusses the bill's sponsors in context of this legislation
+
+CRITERIA FOR IRRELEVANCE:
+- General news not about legislation
+- Different bills or unrelated legislative topics
+- Sports, entertainment, weather, or other non-legislative content
+- Articles about different policy areas
+
+Respond with only "RELEVANT" or "NOT_RELEVANT" - no explanation needed.`;
+
+      const result = await this.geminiModel.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text().trim().toUpperCase();
+      
+      return text.includes('RELEVANT') && !text.includes('NOT_RELEVANT');
+    } catch (error) {
+      console.log(`⚠️ AI validation failed for article "${article.title}": ${error.message}`);
+      // Fallback to basic validation if AI fails
+      return this.isRelevantArticle(article, billData);
+    }
+  }
+
+  /**
    * Fetch relevant news articles for a bill with comprehensive error handling
    * @param {string} billId - Unique bill identifier
    * @param {Object} billData - Bill data containing title, keywords, etc.
@@ -83,8 +142,8 @@ class NewsService {
           // Fetch news articles
           const articles = await this._searchNews(keywords);
           
-          // Process and filter articles
-          const processedArticles = this.processArticles(articles, billData);
+          // Process and filter articles with AI validation
+          const processedArticles = await this.processArticles(articles, billData);
           
           // Cache the results
           await this.cacheNews(billId, processedArticles);
@@ -133,6 +192,11 @@ class NewsService {
     // Add bill number (most specific)
     if (billData.billNumber) {
       keywords.push(billData.billNumber);
+      // Also add variations like "SB 1" and "SB1"
+      const billNum = billData.billNumber.replace(/\s+/g, '');
+      if (billNum !== billData.billNumber) {
+        keywords.push(billNum);
+      }
     }
     
     // Extract key terms from title
@@ -142,17 +206,29 @@ class NewsService {
       // Remove common legislative words and extract meaningful terms
       const meaningfulWords = title
         .toLowerCase()
-        .replace(/\b(relating|to|an|act|bill|senate|house|texas|legislature|amending|creating|establishing)\b/g, '')
+        .replace(/\b(relating|to|an|act|bill|senate|house|texas|legislature|amending|creating|establishing|concerning|regarding)\b/g, '')
         .split(/\s+/)
         .filter(word => word.length > 3 && !this.isCommonWord(word))
-        .slice(0, 3); // Limit to 3 key terms
+        .slice(0, 4); // Increased to 4 key terms
       
       keywords.push(...meaningfulWords);
     }
     
     // Add topics if available
     if (billData.topics && Array.isArray(billData.topics)) {
-      keywords.push(...billData.topics.slice(0, 2)); // Limit to 2 topics
+      keywords.push(...billData.topics.slice(0, 3)); // Increased to 3 topics
+    }
+    
+    // Extract keywords from abstract if available
+    if (billData.abstract) {
+      const abstractWords = billData.abstract
+        .toLowerCase()
+        .replace(/\b(the|and|for|are|but|not|you|all|can|had|her|was|one|our|out|day|get|has|him|his|how|man|new|now|old|see|two|way|who|boy|did|its|let|put|say|she|too|use|this|that|with|have|from|they|know|want|been|good|much|some|time|very|when|come|here|just|like|long|make|many|over|such|take|than|them|well|were)\b/g, '')
+        .split(/\s+/)
+        .filter(word => word.length > 4 && !this.isCommonWord(word))
+        .slice(0, 2);
+      
+      keywords.push(...abstractWords);
     }
     
     // Add "Texas" to make results more relevant
@@ -181,47 +257,82 @@ class NewsService {
       // Implement rate limiting
       await this._enforceRateLimit();
       
-      // Build search query
-      const query = keywords.join(' OR ');
+      // Try multiple search strategies with improved coverage
+      const searchStrategies = [
+        // Strategy 1: Exact bill number + Texas
+        keywords.length > 0 ? `"${keywords[0]}" AND Texas` : null,
+        
+        // Strategy 2: Bill number without quotes + legislature
+        keywords.length > 0 ? `${keywords[0]} AND "Texas legislature"` : null,
+        
+        // Strategy 3: Key topics + Texas + legislative terms
+        keywords.length > 2 ? `(${keywords.slice(1, 4).join(' OR ')}) AND Texas AND (bill OR legislation OR senate OR house OR law)` : null,
+        
+        // Strategy 4: Broader topic search with Texas government
+        keywords.length > 1 ? `${keywords.slice(1, 3).join(' ')} AND "Texas" AND (government OR policy OR legislature)` : null,
+        
+        // Strategy 5: Topic-based search without bill numbers
+        keywords.length > 3 ? `(${keywords.slice(3, 6).join(' OR ')}) AND Texas` : null,
+        
+        // Strategy 6: Very broad Texas legislature search
+        'Texas legislature AND (bill OR senate OR house OR law OR policy)'
+      ].filter(Boolean);
       
-      if (query.length > 500) {
-        throw new AppError('Search query too long', 'VALIDATION_ERROR');
+      console.log('🔍 Trying search strategies:', searchStrategies);
+      
+      for (const query of searchStrategies) {
+        console.log(`🔎 Searching with query: "${query}"`);
+        
+        if (query.length > 500) {
+          console.log('⚠️ Query too long, skipping');
+          continue;
+        }
+        
+        // Search for articles from the last 30 days (News API free plan limit)
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 29); // Stay within free plan limits
+        
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        try {
+          const response = await this.newsapi.v2.everything({
+            q: query,
+            language: 'en',
+            sortBy: 'relevancy',
+            pageSize: 20, // Get more articles to filter
+            from: fromDate.toISOString().split('T')[0],
+            // Remove domain restriction to get more results
+            // domains: 'texastribune.org,statesman.com,dallasnews.com,houstonchronicle.com,expressnews.com,star-telegram.com'
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (response.status === 'ok' && response.articles && response.articles.length > 0) {
+            console.log(`✅ Found ${response.articles.length} articles with strategy: "${query}"`);
+            return response.articles;
+          } else {
+            console.log(`❌ No articles found with strategy: "${query}"`);
+          }
+        } catch (apiError) {
+          clearTimeout(timeoutId);
+          console.log(`❌ API error with strategy "${query}":`, apiError.message);
+          
+          if (apiError.name === 'AbortError') {
+            throw new AppError('News API request timeout', 'TIMEOUT');
+          }
+          // Continue to next strategy for other errors
+        }
+        
+        // Rate limit between strategies
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
-      // Search for articles from the last 30 days
-      const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - 30);
+      // If no strategy worked, return empty array
+      console.log('❌ All search strategies failed');
+      return [];
       
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-      
-      try {
-        const response = await this.newsapi.v2.everything({
-          q: query,
-          language: 'en',
-          sortBy: 'relevancy',
-          pageSize: this.maxArticles * 2, // Get more to filter later
-          from: fromDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
-          domains: 'texastribune.org,statesman.com,dallasnews.com,houstonchronicle.com,expressnews.com,star-telegram.com' // Texas news sources
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.status === 'ok') {
-          return response.articles || [];
-        } else {
-          throw new AppError(`News API error: ${response.message || 'Unknown error'}`, 'NEWS_SERVICE_ERROR');
-        }
-      } catch (apiError) {
-        clearTimeout(timeoutId);
-        
-        if (apiError.name === 'AbortError') {
-          throw new AppError('News API request timeout', 'TIMEOUT');
-        } else {
-          throw apiError;
-        }
-      }
     } catch (error) {
       console.error('News API search failed:', error.message);
       
@@ -260,25 +371,44 @@ class NewsService {
   }
 
   /**
-   * Process and filter articles for relevance
+   * Process and filter articles for relevance using AI validation
    * @private
    */
-  processArticles(articles, billData) {
+  async processArticles(articles, billData) {
     if (!articles || articles.length === 0) {
       return [];
     }
     
-    return articles
-      .filter(article => this.isRelevantArticle(article, billData))
-      .slice(0, this.maxArticles)
-      .map(article => ({
-        headline: article.title,
-        source: article.source?.name || 'Unknown Source',
-        url: article.url,
-        publishedAt: new Date(article.publishedAt),
-        description: article.description,
-        urlToImage: article.urlToImage
-      }));
+    const relevantArticles = [];
+    
+    // First pass: basic filtering
+    const basicFiltered = articles.filter(article => this.isRelevantArticle(article, billData));
+    
+    // Second pass: AI validation for better accuracy
+    for (const article of basicFiltered.slice(0, this.maxArticles * 2)) { // Check more than we need
+      const isRelevant = await this.validateArticleRelevance(article, billData);
+      
+      if (isRelevant) {
+        relevantArticles.push({
+          headline: article.title,
+          source: article.source?.name || 'Unknown Source',
+          url: article.url,
+          publishedAt: new Date(article.publishedAt),
+          description: article.description,
+          urlToImage: article.urlToImage
+        });
+        
+        // Stop when we have enough relevant articles
+        if (relevantArticles.length >= this.maxArticles) {
+          break;
+        }
+      }
+      
+      // Add small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    return relevantArticles;
   }
 
   /**
@@ -291,32 +421,59 @@ class NewsService {
     }
     
     // Filter out articles that are clearly not about legislation
-    const irrelevantKeywords = ['sports', 'weather', 'entertainment', 'celebrity', 'movie', 'music'];
+    const irrelevantKeywords = ['sports', 'weather', 'entertainment', 'celebrity', 'movie', 'music', 'recipe', 'fashion', 'obituary', 'wedding'];
     const title = article.title.toLowerCase();
+    const description = (article.description || '').toLowerCase();
+    const content = title + ' ' + description;
     
-    if (irrelevantKeywords.some(keyword => title.includes(keyword))) {
+    if (irrelevantKeywords.some(keyword => content.includes(keyword))) {
       return false;
     }
     
     // Check if article mentions bill number or key terms
     const billNumber = billData.billNumber?.toLowerCase();
-    const content = (article.title + ' ' + (article.description || '')).toLowerCase();
     
     if (billNumber && content.includes(billNumber)) {
       return true; // High relevance if bill number is mentioned
     }
     
-    // Check for topic relevance
+    // More lenient legislative keywords check
+    const legislativeKeywords = ['bill', 'legislation', 'senate', 'house', 'legislature', 'law', 'policy', 'government', 'texas', 'capitol', 'lawmaker', 'representative', 'senator', 'committee', 'vote', 'passed', 'filed'];
+    const hasLegislativeContent = legislativeKeywords.some(keyword => content.includes(keyword));
+    
+    // Check for topic relevance (more lenient)
     if (billData.topics && Array.isArray(billData.topics)) {
       const hasTopicMatch = billData.topics.some(topic => 
         content.includes(topic.toLowerCase())
       );
-      if (hasTopicMatch) {
+      if (hasTopicMatch && hasLegislativeContent) {
         return true;
       }
     }
     
-    return false;
+    // Check for title keywords (more lenient)
+    if (billData.shortTitle || billData.fullTitle) {
+      const titleWords = (billData.shortTitle || billData.fullTitle)
+        .toLowerCase()
+        .split(/\s+/)
+        .filter(word => word.length > 3 && !this.isCommonWord(word));
+      
+      const hasTitleMatch = titleWords.some(word => content.includes(word));
+      if (hasTitleMatch && hasLegislativeContent) {
+        return true;
+      }
+    }
+    
+    // If it has strong legislative content, include it even without specific matches
+    const strongLegislativeKeywords = ['texas legislature', 'texas senate', 'texas house', 'state capitol', 'austin legislature'];
+    const hasStrongLegislativeContent = strongLegislativeKeywords.some(keyword => content.includes(keyword));
+    
+    if (hasStrongLegislativeContent) {
+      return true;
+    }
+    
+    // More lenient check - if it mentions Texas and has any legislative context
+    return content.includes('texas') && hasLegislativeContent;
   }
 
   /**
@@ -335,21 +492,23 @@ class NewsService {
         }
       }
 
-      // Check Firebase cache
-      const db = databaseService.getDb();
-      const newsDoc = await db.collection('news_cache').doc(billId).get();
-      
-      if (newsDoc.exists) {
-        const data = newsDoc.data();
-        const cacheAge = Date.now() - data.lastFetched.toMillis();
+      // Try Firebase cache only if database is connected
+      if (databaseService.isConnected) {
+        const db = databaseService.getDb();
+        const newsDoc = await db.collection('news_cache').doc(billId).get();
         
-        if (cacheAge < this.cacheExpiry) {
-          // Add to memory cache
-          this.cache.set(billId, {
-            articles: data.articles,
-            timestamp: data.lastFetched.toMillis()
-          });
-          return data.articles;
+        if (newsDoc.exists) {
+          const data = newsDoc.data();
+          const cacheAge = Date.now() - data.lastFetched.toMillis();
+          
+          if (cacheAge < this.cacheExpiry) {
+            // Add to memory cache
+            this.cache.set(billId, {
+              articles: data.articles,
+              timestamp: data.lastFetched.toMillis()
+            });
+            return data.articles;
+          }
         }
       }
       
@@ -366,25 +525,29 @@ class NewsService {
    */
   async cacheNews(billId, articles) {
     try {
-      const db = databaseService.getDb();
-      const newsRef = db.collection('news_cache').doc(billId);
-      
-      const cacheData = {
-        billId,
-        articles,
-        lastFetched: new Date(),
-        articleCount: articles.length
-      };
-      
-      await newsRef.set(cacheData);
-      
-      // Add to memory cache
+      // Always add to memory cache
       this.cache.set(billId, {
         articles,
         timestamp: Date.now()
       });
       
-      console.log(`💾 Cached ${articles.length} news articles for bill ${billId}`);
+      // Try Firebase cache only if database is connected
+      if (databaseService.isConnected) {
+        const db = databaseService.getDb();
+        const newsRef = db.collection('news_cache').doc(billId);
+        
+        const cacheData = {
+          billId,
+          articles,
+          lastFetched: new Date(),
+          articleCount: articles.length
+        };
+        
+        await newsRef.set(cacheData);
+        console.log(`💾 Cached ${articles.length} news articles for bill ${billId} in Firebase`);
+      } else {
+        console.log(`💾 Cached ${articles.length} news articles for bill ${billId} in memory only`);
+      }
     } catch (error) {
       console.error('Failed to cache news:', error.message);
       // Don't throw - caching failure shouldn't break the main flow

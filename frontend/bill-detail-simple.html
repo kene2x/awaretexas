@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Details - Texas Senate Bill Tracker</title>
+    <link href="styles/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div id="app">
+        <!-- Navigation Header -->
+        <header class="bg-blue-800 text-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between py-4">
+                    <div class="flex items-center space-x-4">
+                        <a href="index.html" class="text-white hover:text-blue-200 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                            </svg>
+                        </a>
+                        <h1 class="text-xl font-bold">Texas Senate Bill Tracker</h1>
+                    </div>
+                    <div class="text-sm">Bill Details</div>
+                </div>
+            </div>
+        </header>
+        
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Loading State -->
+            <div id="loading" class="text-center py-16">
+                <div class="inline-flex items-center px-4 py-3 font-semibold text-sm shadow-lg rounded-lg text-blue-600 bg-white border border-gray-200">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading bill details...
+                </div>
+            </div>
+
+            <!-- Bill Detail Content -->
+            <div id="bill-detail-content" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Main Content -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- Bill Header -->
+                        <div id="bill-header" class="bg-white rounded-lg shadow p-6">
+                            <!-- Content populated by JavaScript -->
+                        </div>
+
+                        <!-- Summary Section -->
+                        <div id="summary-section" class="bg-white rounded-lg shadow p-6">
+                            <!-- Content populated by JavaScript -->
+                        </div>
+
+                        <!-- News Section -->
+                        <div id="news-section" class="bg-white rounded-lg shadow p-6">
+                            <!-- Content populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="space-y-8">
+                        <!-- Sponsor Info -->
+                        <div id="sponsor-info" class="bg-white rounded-lg shadow p-6">
+                            <!-- Content populated by JavaScript -->
+                        </div>
+
+                        <!-- Official Link -->
+                        <div id="official-link" class="bg-white rounded-lg shadow p-6">
+                            <!-- Content populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="hidden text-center py-16">
+                <div class="max-w-lg mx-auto">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                        <svg class="mx-auto h-16 w-16 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <h3 class="text-lg font-semibold text-red-800 mb-2">Unable to Load Bill Details</h3>
+                        <p id="error-message" class="text-sm text-red-600 mb-6">Failed to load bill details. Please try again later.</p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                            <button onclick="location.reload()" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
+                                Retry Loading
+                            </button>
+                            <a href="index.html" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium">
+                                Back to Bills
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Simple JavaScript - no complex dependencies -->
+    <script src="js/bill-detail-simple.js"></script>
+</body>
+</html>

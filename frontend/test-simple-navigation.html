@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple Navigation</title>
+    <link href="styles/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">Test Simple Bill Detail Navigation</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Available Test Bills:</h2>
+            <div class="grid gap-4">
+                <a href="bill-detail-simple.html?id=SB%201" 
+                   class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="font-semibold text-blue-600">SB 1</div>
+                    <div class="text-sm text-gray-600">General Appropriations Bill</div>
+                </a>
+                
+                <a href="bill-detail-simple.html?id=SB%202" 
+                   class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="font-semibold text-blue-600">SB 2</div>
+                    <div class="text-sm text-gray-600">Education Savings Account Program</div>
+                </a>
+                
+                <a href="bill-detail-simple.html?id=HB%201" 
+                   class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="font-semibold text-blue-600">HB 1</div>
+                    <div class="text-sm text-gray-600">Public School Finance Reform</div>
+                </a>
+                
+                <a href="bill-detail-simple.html?id=SB%20123" 
+                   class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="font-semibold text-blue-600">SB 123</div>
+                    <div class="text-sm text-gray-600">Healthcare Access Improvement</div>
+                </a>
+                
+                <a href="bill-detail-simple.html?id=HB%2042" 
+                   class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="font-semibold text-blue-600">HB 42</div>
+                    <div class="text-sm text-gray-600">Transportation Infrastructure</div>
+                </a>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">API Test Results:</h2>
+            <div id="api-results" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <script>
+        // Test API endpoints
+        const testBills = ['SB 1', 'SB 2', 'HB 1', 'SB 123', 'HB 42'];
+        const resultsDiv = document.getElementById('api-results');
+        
+        async function testBill(billId) {
+            try {
+                const response = await fetch(`/api/bills/${encodeURIComponent(billId)}`);
+                const data = await response.json();
+                
+                const result = document.createElement('div');
+                result.className = `p-3 rounded ${data.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                result.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <strong>${billId}</strong>
+                        <span>${data.success ? '✅ Success' : '❌ Failed'}</span>
+                    </div>
+                    ${data.success ? 
+                        `<div class="text-sm mt-1">${data.data.shortTitle}</div>` : 
+                        `<div class="text-sm mt-1">${data.error}</div>`
+                    }
+                `;
+                resultsDiv.appendChild(result);
+            } catch (error) {
+                const result = document.createElement('div');
+                result.className = 'p-3 rounded bg-red-100 text-red-800';
+                result.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <strong>${billId}</strong>
+                        <span>❌ Network Error</span>
+                    </div>
+                    <div class="text-sm mt-1">${error.message}</div>
+                `;
+                resultsDiv.appendChild(result);
+            }
+        }
+        
+        // Test all bills
+        testBills.forEach(testBill);
+    </script>
+</body>
+</html>

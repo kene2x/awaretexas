@@ -55,20 +55,37 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
     }
     
     // Convert to Bill instances and get preview summaries
+    const { idStandardizer } = require('../../config/id-standardizer');
+    
     const billInstances = bills.map(billData => {
       try {
         const bill = new Bill(billData);
-        // Ensure the frontend receives a stable canonical id used for navigation
-        const canonicalId = require('../../config/bill-database').billDatabase.normalizeDocId(billData.id || billData.billNumber);
+        
+        // Use standardized ID for consistent navigation
+        const rawId = billData.billNumber || billData.id;
+        const standardId = idStandardizer.standardize(rawId);
+        const displayId = idStandardizer.toDisplayFormat(standardId);
+        
         return {
           ...bill.toJSON(),
-          id: canonicalId,
+          id: displayId,  // Use display format for frontend (e.g., "SB 1")
+          standardId: standardId,  // Include standard format for reference (e.g., "SB1")
           statusColor: bill.getStatusColor(),
           previewSummary: bill.getPreviewSummary()
         };
       } catch (error) {
         console.error(`Error creating Bill instance for ${billData.id}:`, error.message);
-        return billData; // Return raw data if Bill creation fails
+        
+        // For raw data, also ensure we use standardized IDs
+        const rawId = billData.billNumber || billData.id;
+        const standardId = idStandardizer.standardize(rawId);
+        const displayId = idStandardizer.toDisplayFormat(standardId);
+        
+        return {
+          ...billData,
+          id: displayId,
+          standardId: standardId
+        };
       }
     });
     
@@ -104,57 +121,41 @@ router.get('/:id', cacheMiddleware.middleware(900), asyncHandler(async (req, res
     throw new AppError('Database not connected', 'DATABASE_ERROR', 500);
   }
 
-  // Try multiple lookup strategies to handle different document id formats
+  // Use the ID standardizer to handle different formats
+  const { idStandardizer } = require('../../config/id-standardizer');
+  
   let billData = null;
   try {
-    // 1) Direct lookup by provided id
-    billData = await billDatabase.getBill(id);
-
-    // 2) Try decoded id (in case of encoded spaces or characters)
-    if (!billData) {
-      const decoded = decodeURIComponent(id);
-      if (decoded !== id) {
-        billData = await billDatabase.getBill(decoded).catch(() => null);
-      }
-    }
-
-    // 3) Try several normalized variants (uppercase, lowercase, remove spaces)
-    if (!billData) {
-      const variants = new Set();
-      const add = v => v && variants.add(String(v));
-      add(id);
-      add(id.toUpperCase());
-      add(id.toLowerCase());
-      add(id.replace(/\s+/g, ''));
-      add(id.replace(/\s+/g, '').toUpperCase());
-      add(id.replace(/\s+/g, '').toLowerCase());
-      // Try inserting space between letters and digits (e.g., SB1 -> SB 1)
-      add(id.replace(/([A-Za-z]+)(\d+)/, '$1 $2'));
-      add(id.replace(/([A-Za-z]+)\s*(\d+)/, '$1$2'));
-
-      for (const candidate of variants) {
-        try {
-          billData = await billDatabase.getBill(candidate);
-          if (billData) break;
-        } catch (e) {
-          // ignore and continue
+    // Generate all possible lookup variants using the standardizer
+    const lookupVariants = idStandardizer.generateLookupVariants(id);
+    console.log(`Looking up bill with variants: ${lookupVariants.join(', ')}`);
+    
+    // Try each variant until we find the bill
+    for (const variant of lookupVariants) {
+      try {
+        billData = await billDatabase.getBill(variant);
+        if (billData) {
+          console.log(`Found bill using variant: ${variant}`);
+          break;
         }
+      } catch (e) {
+        // Continue to next variant
       }
     }
 
-    // 4) Fallback: try querying by the billNumber field using CRUD helper
+    // Fallback: try querying by the billNumber field using CRUD helper
     if (!billData) {
       const { crudOperations } = require('../../config/crud-operations');
-      const candidates = [id, decodeURIComponent(id), id.replace(/\s+/g, ''), id.toUpperCase(), id.toLowerCase()];
-      for (const candidate of candidates) {
+      for (const variant of lookupVariants) {
         try {
-          const results = await crudOperations.findWhere('bills', 'billNumber', '==', candidate, 1);
+          const results = await crudOperations.findWhere('bills', 'billNumber', '==', variant, 1);
           if (results && results.length > 0) {
             billData = results[0];
+            console.log(`Found bill by billNumber field using variant: ${variant}`);
             break;
           }
         } catch (e) {
-          // ignore and continue
+          // Continue to next variant
         }
       }
     }
@@ -246,18 +247,26 @@ router.post('/summary/:billId', cacheMiddleware.summaryMiddleware(), asyncHandle
     throw new AppError('Bill not found', 'NOT_FOUND', 404, { billId });
   }
   
-  // Check if bill has text to summarize
+  // Check if bill has text to summarize - prioritize bill text over abstract
   if (!billData.billText && !billData.abstract) {
     throw new AppError('Bill has no text available for summarization', 'VALIDATION_ERROR', 400, { billId });
   }
   
   // Clear cache if force regenerate is requested
   if (forceRegenerate) {
-    summaryService.clearCache(billId);
+    await summaryService.clearCache(billId);
+    console.log(`🗑️ Force regenerate: cleared cache for bill ${billId}`);
   }
   
-  // Generate or retrieve summary
-  const textToSummarize = billData.billText || billData.abstract;
+  // Generate or retrieve summary - use full bill text if available, fallback to abstract
+  let textToSummarize = billData.billText;
+  
+  // If no bill text, use abstract but note this in the response
+  if (!textToSummarize && billData.abstract) {
+    textToSummarize = billData.abstract;
+    console.log(`⚠️ Using abstract for summarization of bill ${billId} - full text not available`);
+  }
+  
   const summary = await summaryService.generateSummary(billId, textToSummarize, readingLevel);
   
   res.json({
@@ -269,6 +278,42 @@ router.post('/summary/:billId', cacheMiddleware.summaryMiddleware(), asyncHandle
       cached: !forceRegenerate,
       generatedAt: new Date().toISOString()
     },
+    timestamp: new Date().toISOString()
+  });
+}));
+
+/**
+ * PUT /api/bills/:billId
+ * Update a specific bill (including voting data)
+ */
+router.put('/:billId', asyncHandler(async (req, res) => {
+  const { billId } = req.params;
+  const updateData = req.body;
+  
+  if (!billId) {
+    throw new AppError('Bill ID is required', 'VALIDATION_ERROR');
+  }
+  
+  // Get existing bill
+  const existingBill = await billDatabase.getBill(billId);
+  if (!existingBill) {
+    throw new AppError('Bill not found', 'NOT_FOUND', 404, { billId });
+  }
+  
+  // Merge update data with existing bill
+  const updatedBill = {
+    ...existingBill,
+    ...updateData,
+    lastUpdated: new Date()
+  };
+  
+  // Save updated bill
+  await billDatabase.saveBill(updatedBill);
+  
+  res.json({
+    success: true,
+    data: updatedBill,
+    message: 'Bill updated successfully',
     timestamp: new Date().toISOString()
   });
 }));
@@ -291,7 +336,12 @@ router.get('/news/:billId', cacheMiddleware.newsMiddleware(), asyncHandler(async
   }
   
   // Fetch news articles
+  console.log('🔍 Fetching news for bill:', billId);
+  console.log('📊 Bill data:', { billNumber: billData.billNumber, shortTitle: billData.shortTitle });
+  console.log('📰 News service initialized:', newsService.isInitialized);
+  
   const articles = await newsService.getNewsForBill(billId, billData);
+  console.log('📰 Articles found:', articles.length);
   
   // Filter out error articles for the response
   const validArticles = articles.filter(article => !article.isError);

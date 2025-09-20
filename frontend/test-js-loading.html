@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test JS Loading</title>
+    <link href="styles/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">JavaScript Loading Test</h1>
+        
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Script Loading Status:</h2>
+            <div id="script-status" class="space-y-2"></div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Test Enhanced Bill Detail:</h2>
+            <a href="bill-detail.html?id=SB%201" 
+               class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Test SB 1 (Enhanced Version)
+            </a>
+        </div>
+    </div>
+
+    <!-- Load the same scripts as bill-detail.html -->
+    <script src="js/error-boundary.js"></script>
+    <script src="js/cache-manager.js"></script>
+    <script src="js/loading-manager.js"></script>
+    <script src="js/api-optimizer.js"></script>
+    <script src="js/performance-monitor.js"></script>
+    
+    <script>
+        const statusDiv = document.getElementById('script-status');
+        
+        function addStatus(name, status, details = '') {
+            const statusItem = document.createElement('div');
+            statusItem.className = `p-3 rounded ${status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            statusItem.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <strong>${name}</strong>
+                    <span>${status ? '✅ Loaded' : '❌ Failed'}</span>
+                </div>
+                ${details ? `<div class="text-sm mt-1">${details}</div>` : ''}
+            `;
+            statusDiv.appendChild(statusItem);
+        }
+        
+        // Check script loading
+        setTimeout(() => {
+            addStatus('Error Boundary', typeof window.errorBoundary !== 'undefined', 
+                     typeof window.errorBoundary !== 'undefined' ? 'Error handling available' : 'Error handling not available');
+            
+            addStatus('Enhanced Fetch', typeof window.enhancedFetch !== 'undefined',
+                     typeof window.enhancedFetch !== 'undefined' ? 'Enhanced fetch available' : 'Using standard fetch');
+            
+            addStatus('Loading Manager', typeof window.loadingManager !== 'undefined',
+                     typeof window.loadingManager !== 'undefined' ? 'Loading animations available' : 'Basic loading only');
+            
+            addStatus('API Optimizer', typeof window.apiOptimizer !== 'undefined',
+                     typeof window.apiOptimizer !== 'undefined' ? 'API optimization available' : 'Standard API calls');
+            
+            addStatus('Performance Monitor', typeof window.performanceMonitor !== 'undefined',
+                     typeof window.performanceMonitor !== 'undefined' ? 'Performance tracking available' : 'No performance tracking');
+            
+            // Test bill-detail.js syntax
+            const script = document.createElement('script');
+            script.src = 'js/bill-detail.js';
+            script.onload = () => {
+                addStatus('Bill Detail Script', true, 'Script loaded successfully');
+            };
+            script.onerror = () => {
+                addStatus('Bill Detail Script', false, 'Script failed to load');
+            };
+            document.head.appendChild(script);
+            
+        }, 1000);
+    </script>
+</body>
+</html>

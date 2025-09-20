@@ -6,6 +6,8 @@ require('dotenv').config();
 // Import services
 const { scrapingScheduler } = require('../services/scheduler');
 const { databaseService } = require('../config/database');
+const { newsService } = require('../services/news');
+const { summaryService } = require('../services/ai-summary');
 
 // Import middleware
 const cacheMiddleware = require('./middleware/cache');
@@ -40,6 +42,106 @@ app.use((req, res, next) => {
 
 // API Routes
 app.use('/api/bills', billsRoutes);
+
+// Database management endpoints
+app.delete('/api/database/clear-all', asyncHandler(async (req, res) => {
+  try {
+    const { crudOperations } = require('../config/crud-operations');
+    const { fallbackManager } = require('./middleware/error-handler');
+    
+    let totalDeleted = 0;
+    const collections = ['bills', 'summaries', 'news'];
+    
+    // Clear each collection completely
+    for (const collection of collections) {
+      let hasMore = true;
+      while (hasMore) {
+        const items = await crudOperations.findAll(collection, 500);
+        if (items.length === 0) {
+          hasMore = false;
+          continue;
+        }
+        
+        console.log(`Deleting ${items.length} items from ${collection}`);
+        
+        const deleteOperations = items.map(item => ({
+          type: 'delete',
+          collection: collection,
+          docId: item.id
+        }));
+        
+        await crudOperations.batchWrite(deleteOperations);
+        totalDeleted += items.length;
+        
+        // If we got less than 500, we're done with this collection
+        if (items.length < 500) {
+          hasMore = false;
+        }
+      }
+    }
+    
+    // Clear all caches
+    cacheMiddleware.clearCache();
+    
+    // Clear fallback cache
+    fallbackManager.fallbackData.clear();
+    
+    console.log(`✅ Completely cleared database: ${totalDeleted} items deleted`);
+    
+    res.json({
+      success: true,
+      message: `Database completely cleared: ${totalDeleted} items deleted`,
+      collections: collections,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Error clearing database:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear database completely',
+      message: error.message
+    });
+  }
+}));
+
+app.delete('/api/database/bills', asyncHandler(async (req, res) => {
+  try {
+    const { crudOperations } = require('../config/crud-operations');
+    
+    // Get all bills
+    const bills = await crudOperations.findAll('bills', 1000);
+    console.log(`Found ${bills.length} bills to delete`);
+    
+    // Delete all bills in batches
+    const batchSize = 10;
+    let deletedCount = 0;
+    
+    for (let i = 0; i < bills.length; i += batchSize) {
+      const batch = bills.slice(i, i + batchSize);
+      const deleteOperations = batch.map(bill => ({
+        type: 'delete',
+        collection: 'bills',
+        docId: bill.id
+      }));
+      
+      await crudOperations.batchWrite(deleteOperations);
+      deletedCount += batch.length;
+      console.log(`Deleted batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(bills.length/batchSize)}`);
+    }
+    
+    res.json({
+      success: true,
+      message: `Deleted ${deletedCount} bills from database`,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear bills database',
+      message: error.message
+    });
+  }
+}));
 
 // Cache management endpoints
 app.get('/api/cache/stats', (req, res) => {
@@ -184,6 +286,33 @@ app.post('/api/scheduler/run', async (req, res) => {
   }
 });
 
+app.post('/api/scheduler/force-fresh', async (req, res) => {
+  try {
+    // Clear fallback cache first
+    const { fallbackManager } = require('./middleware/error-handler');
+    fallbackManager.fallbackData.clear();
+    
+    // Clear regular cache
+    cacheMiddleware.clearCache();
+    
+    // Run fresh scrape
+    const result = await scrapingScheduler.runManualScrape();
+    
+    res.json({
+      success: true,
+      message: 'Fresh scraping completed (no fallback data)',
+      result,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Fresh scraping failed',
+      error: error.message
+    });
+  }
+});
+
 // Initialize and start services on server startup
 async function initializeServer() {
   try {
@@ -192,6 +321,22 @@ async function initializeServer() {
     // Initialize database connection
     await databaseService.connect();
     await databaseService.initializeCollections();
+    
+    // Initialize news service
+    try {
+      await newsService.initialize();
+      console.log('✅ News service initialized');
+    } catch (error) {
+      console.warn('⚠️ News service initialization failed:', error.message);
+    }
+    
+    // Initialize AI summary service
+    try {
+      await summaryService.initialize();
+      console.log('✅ AI summary service initialized');
+    } catch (error) {
+      console.warn('⚠️ AI summary service initialization failed:', error.message);
+    }
     
     // Initialize scheduler
     await scrapingScheduler.initialize();

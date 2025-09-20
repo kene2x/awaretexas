@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Improvements - Texas Senate Bill Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Texas Senate Bill Tracker - Improvements Test</h1>
+    
+    <div class="test-section">
+        <h2>1. AI Summary Test (High Level)</h2>
+        <button onclick="testAISummary('SB1', 'high-level')">Test SB1 High-Level Summary</button>
+        <div id="ai-summary-high" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. AI Summary Test (Detailed)</h2>
+        <button onclick="testAISummary('SB1', 'detailed')">Test SB1 Detailed Summary</button>
+        <div id="ai-summary-detailed" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. News Service Test</h2>
+        <button onclick="testNews('SB2')">Test SB2 News (Should find articles)</button>
+        <div id="news-test" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Abstract Formatting Test</h2>
+        <button onclick="testAbstractFormatting()">Test Abstract Formatting</button>
+        <div id="abstract-test" class="result"></div>
+    </div>
+
+    <script>
+        async function testAISummary(billId, level) {
+            const resultDiv = document.getElementById(`ai-summary-${level}`);
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch(`/api/bills/summary/${billId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ readingLevel: level })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Success</h4>
+                        <p><strong>Summary:</strong> ${data.data.summary}</p>
+                        <p><strong>Reading Level:</strong> ${data.data.readingLevel}</p>
+                        <p><strong>Cached:</strong> ${data.data.cached}</p>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testNews(billId) {
+            const resultDiv = document.getElementById('news-test');
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch(`/api/bills/news/${billId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Success</h4>
+                        <p><strong>Articles Found:</strong> ${data.data.count}</p>
+                        <div>
+                            ${data.data.articles.map(article => `
+                                <div style="margin: 10px 0; padding: 10px; border-left: 3px solid #007bff;">
+                                    <strong>${article.headline}</strong><br>
+                                    <small>Source: ${article.source}</small><br>
+                                    <p>${article.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testAbstractFormatting() {
+            const resultDiv = document.getElementById('abstract-test');
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                const response = await fetch('/api/bills/SB1');
+                const data = await response.json();
+                
+                if (data.success && data.data.abstract) {
+                    // Simulate the formatAbstract function
+                    const abstract = data.data.abstract;
+                    let formatted = abstract
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .replace(/SECTION\s+(\d+)/gi, '<br><strong>Section $1</strong>')
+                        .replace(/\.\s*SECTION/g, '.<br><br><strong>SECTION</strong>')
+                        .replace(/\.\s+([A-Z][a-z])/g, '.<br><br>$1')
+                        .replace(/\.{2,}/g, '.')
+                        .replace(/\(\s+/g, '(')
+                        .replace(/\s+\)/g, ')')
+                        .replace(/"\s+/g, '"')
+                        .replace(/\s+"/g, '"');
+                    
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Success</h4>
+                        <p><strong>Original Abstract:</strong></p>
+                        <pre>${abstract}</pre>
+                        <p><strong>Formatted Abstract:</strong></p>
+                        <div style="border: 1px solid #ddd; padding: 10px;">${formatted}</div>
+                    `;
+                } else {
+                    throw new Error('No abstract found');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

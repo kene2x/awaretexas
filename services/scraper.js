@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { AppError, retryManager, fallbackManager, circuitBreakers } = require('../backend/middleware/error-handler');
+const { idStandardizer } = require('../config/id-standardizer');
 
 // Conditional cheerio import for testing compatibility
 let cheerio;
@@ -8,6 +9,15 @@ try {
 } catch (error) {
   // Fallback for test environment
   cheerio = null;
+}
+
+// Add PDF parsing capability
+let pdfParse;
+try {
+  pdfParse = require('pdf-parse');
+} catch (error) {
+  console.warn('pdf-parse not available, PDF text extraction will be disabled');
+  pdfParse = null;
 }
 
 /**
@@ -67,9 +77,11 @@ class TexasLegislatureScraper {
             
             // Each bill has its own table structure
             // Look for tables that contain bill numbers (SB pattern)
-            $('table').each((tableIndex, table) => {
+            const tables = $('table').toArray();
+            
+            for (let tableIndex = 0; tableIndex < tables.length; tableIndex++) {
               try {
-                const $table = $(table);
+                const $table = $(tables[tableIndex]);
                 const tableText = $table.text();
                 
                 // Check if this table contains a Senate bill
@@ -78,12 +90,12 @@ class TexasLegislatureScraper {
                   const billNumber = `SB ${billMatch[1]}`;
                   
                   // Extract bill information from the table structure
-                  const billData = this.parseBillTable($table, billNumber);
+                  const billData = await this.parseBillTable($table, billNumber);
                   
                   if (billData && this.validateBillData(billData)) {
                     bills.push(billData);
                     
-                    if (bills.length % 100 === 0) {
+                    if (bills.length % 10 === 0) {
                       console.log(`Processed ${bills.length} bills...`);
                     }
                   }
@@ -92,7 +104,7 @@ class TexasLegislatureScraper {
                 console.warn(`Error processing table ${tableIndex}:`, tableError.message);
                 // Continue processing other tables
               }
-            });
+            }
             
             if (bills.length === 0) {
               throw new AppError('No Senate bills found in the report', 'SCRAPING_ERROR');
@@ -153,7 +165,7 @@ class TexasLegislatureScraper {
    * @param {string} billNumber - Bill number (e.g., "SB 1")
    * @returns {Object|null} Bill data object or null if parsing fails
    */
-  parseBillTable($table, billNumber) {
+  async parseBillTable($table, billNumber) {
     try {
       const tableText = $table.text();
       
@@ -186,21 +198,59 @@ class TexasLegislatureScraper {
         sponsorsList.push({ name: authors[0], photoUrl: '', district: '' });
       }
       
-      return {
-        billNumber: billNumber.replace(/\s+/g, ' '), // Normalize spacing
+      // Standardize the bill number for consistent storage and lookup
+      const standardizedBillNumber = idStandardizer.standardize(billNumber);
+      const displayBillNumber = idStandardizer.toDisplayFormat(standardizedBillNumber);
+      
+      // Extract dates
+      const lastActionDate = this.extractDateFromAction(lastAction);
+      const filedDate = this.extractFiledDate(tableText) || lastActionDate;
+      
+      const billData = {
+        id: standardizedBillNumber, // Use standardized format as document ID (e.g., "SB1")
+        billNumber: displayBillNumber, // Use display format for UI (e.g., "SB 1")
         shortTitle: this.extractShortTitle(caption),
-        fullTitle: caption || `${billNumber} - Title not available`,
+        fullTitle: caption || `${displayBillNumber} - Title not available`,
         status: status,
         sponsors: sponsorsList,
-        officialUrl: '', // We'll need to construct this separately if needed
+        officialUrl: `https://capitol.texas.gov/BillLookup/History.aspx?LegSess=88R&Bill=${standardizedBillNumber}`,
         billText: '',
         abstract: caption || '',
-        committee: '',
+        committee: this.extractCommittee(tableText),
         coSponsors: sponsors.slice(0, 5).map(name => name.trim()).filter(name => name.length > 0),
-        filedDate: this.extractDateFromAction(lastAction),
+        filedDate: filedDate,
+        lastActionDate: lastActionDate,
+        lastAction: lastAction,
         lastUpdated: new Date(),
         topics: this.extractTopicsFromTitle(caption)
       };
+      
+      // Try to fetch bill text and summary from the website
+      try {
+        console.log(`📄 Attempting to fetch bill text for ${displayBillNumber}...`);
+        const textResult = await this.fetchBillText(standardizedBillNumber);
+        
+        if (textResult.billText && textResult.billText.length > 100) {
+          billData.billText = textResult.billText;
+          console.log(`✅ Successfully fetched bill text for ${displayBillNumber} (${textResult.billText.length} characters)`);
+        }
+        
+        if (textResult.summary && textResult.summary.length > 50) {
+          // Use the official summary if it's more substantial than the caption
+          if (textResult.summary.length > (billData.abstract || '').length) {
+            billData.abstract = textResult.summary;
+            console.log(`✅ Successfully fetched official summary for ${displayBillNumber} (${textResult.summary.length} characters)`);
+          }
+        }
+        
+        if (!textResult.billText && !textResult.summary) {
+          console.log(`⚠️ No substantial content found for ${displayBillNumber}`);
+        }
+      } catch (error) {
+        console.warn(`❌ Failed to fetch bill content for ${displayBillNumber}:`, error.message);
+      }
+      
+      return billData;
       
     } catch (error) {
       console.warn(`Error parsing bill table for ${billNumber}:`, error.message);
@@ -243,13 +293,81 @@ class TexasLegislatureScraper {
   extractDateFromAction(actionText) {
     if (!actionText) return null;
     
-    // Look for date patterns like MM/DD/YYYY
-    const dateMatch = actionText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
-    if (dateMatch) {
-      return new Date(dateMatch[1]);
+    try {
+      // Look for various date patterns
+      const patterns = [
+        /(\d{1,2}\/\d{1,2}\/\d{4})/,           // MM/DD/YYYY
+        /(\d{1,2}-\d{1,2}-\d{4})/,             // MM-DD-YYYY
+        /(\d{4}-\d{1,2}-\d{1,2})/,             // YYYY-MM-DD
+        /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/i, // Month DD, YYYY
+        /(\d{1,2}\/\d{1,2}\/\d{2})/            // MM/DD/YY
+      ];
+      
+      for (const pattern of patterns) {
+        const match = actionText.match(pattern);
+        if (match) {
+          const dateStr = match[1] || match[0];
+          const date = new Date(dateStr);
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error parsing date from action:', actionText, error.message);
     }
     
     return null;
+  }
+
+  /**
+   * Extract filed date from bill text (different from last action date)
+   */
+  extractFiledDate(tableText) {
+    if (!tableText) return null;
+    
+    try {
+      // Look for "Filed:" followed by a date
+      const filedMatch = tableText.match(/Filed:\s*([^|\n]+)/i);
+      if (filedMatch) {
+        return this.extractDateFromAction(filedMatch[1]);
+      }
+      
+      // Look for "Introduced:" followed by a date
+      const introducedMatch = tableText.match(/Introduced:\s*([^|\n]+)/i);
+      if (introducedMatch) {
+        return this.extractDateFromAction(introducedMatch[1]);
+      }
+    } catch (error) {
+      console.warn('Error extracting filed date:', error.message);
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract committee information from bill text
+   */
+  extractCommittee(tableText) {
+    if (!tableText) return '';
+    
+    try {
+      // Look for "Committee:" followed by committee name
+      const committeeMatch = tableText.match(/Committee:\s*([^|\n]+)/i);
+      if (committeeMatch) {
+        return committeeMatch[1].trim();
+      }
+      
+      // Look for "Referred to:" followed by committee name
+      const referredMatch = tableText.match(/Referred to:\s*([^|\n]+)/i);
+      if (referredMatch) {
+        return referredMatch[1].trim();
+      }
+    } catch (error) {
+      console.warn('Error extracting committee:', error.message);
+    }
+    
+    return '';
   }
 
   /**
@@ -284,6 +402,334 @@ class TexasLegislatureScraper {
   }
 
 
+
+  /**
+   * Fetch bill text from Texas Legislature website
+   * @param {string} billNumber - Standardized bill number (e.g., "SB1")
+   * @returns {Promise<Object>} Object with billText and summary
+   */
+  async fetchBillText(billNumber) {
+    if (!billNumber) return { billText: '', summary: '' };
+    
+    try {
+      // Try the Text.aspx page first (most reliable)
+      const textPageResult = await this.fetchBillTextFromTextPage(billNumber);
+      if (textPageResult.billText || textPageResult.summary) {
+        return textPageResult;
+      }
+      
+      // Fallback to direct document URLs
+      const directText = await this.fetchBillTextFromDirectUrls(billNumber);
+      return { billText: directText, summary: '' };
+      
+    } catch (error) {
+      console.error(`Error fetching bill text for ${billNumber}:`, error.message);
+      return { billText: '', summary: '' };
+    }
+  }
+
+  /**
+   * Fetch bill text and summary using the correct Texas Legislature URLs
+   * @param {string} billNumber - Standardized bill number
+   * @returns {Promise<Object>} Object with billText and summary
+   */
+  async fetchBillTextFromTextPage(billNumber) {
+    try {
+      // Try different session numbers
+      const sessions = ['892', '891', '881', '871'];
+      
+      for (const session of sessions) {
+        const result = { billText: '', summary: '' };
+        
+        // Fetch summary from BillSummary.aspx
+        try {
+          const summaryUrl = `https://capitol.texas.gov/BillLookup/BillSummary.aspx?LegSess=${session}&Bill=${billNumber}`;
+          console.log(`🔗 Trying Summary URL: ${summaryUrl}`);
+          
+          const summaryResponse = await axios.get(summaryUrl, {
+            timeout: 10000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
+            }
+          });
+          
+          if (summaryResponse.status === 200 && summaryResponse.data) {
+            const $ = cheerio.load(summaryResponse.data);
+            
+            // Remove navigation elements
+            $('nav, header, footer, .navigation, .header, .footer, script, style').remove();
+            
+            // Look for summary content
+            const summarySelectors = [
+              '#BillSummary',
+              '.summary',
+              'div[id*="summary"]',
+              'div[class*="summary"]',
+              'table td', // Summary is often in table cells
+              '.content',
+              'main'
+            ];
+            
+            for (const selector of summarySelectors) {
+              const element = $(selector);
+              if (element.length > 0) {
+                let text = element.text().trim();
+                
+                // Filter out navigation text
+                if (text.length > 50 && 
+                    !text.includes('Help | FAQ') &&
+                    !text.includes('Site Map') &&
+                    !text.includes('Login') &&
+                    text.length > result.summary.length) {
+                  
+                  // Clean up summary text
+                  text = text
+                    .replace(/^SUMMARY:?\s*/i, '')
+                    .replace(/\s+/g, ' ')
+                    .replace(/\n\s*\n/g, '\n')
+                    .trim();
+                  
+                  result.summary = text;
+                }
+              }
+            }
+          }
+        } catch (summaryError) {
+          console.log(`Summary not found for ${billNumber} in session ${session}`);
+        }
+        
+        // Fetch bill text from direct HTML document
+        try {
+          // Format bill number for document URL (e.g., SB1 -> SB00001)
+          const formattedBillNum = this.formatBillNumberForDocument(billNumber);
+          const versions = ['F', 'I', 'E', 'S']; // Different bill versions
+          
+          for (const version of versions) {
+            try {
+              const textUrl = `https://capitol.texas.gov/tlodocs/${session}/billtext/html/${formattedBillNum}${version}.htm`;
+              console.log(`🔗 Trying Bill Text URL: ${textUrl}`);
+              
+              const textResponse = await axios.get(textUrl, {
+                timeout: 10000,
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
+                }
+              });
+              
+              if (textResponse.status === 200 && textResponse.data) {
+                const $ = cheerio.load(textResponse.data);
+                
+                // Remove navigation and script elements
+                $('nav, header, footer, script, style, .navigation').remove();
+                
+                // Extract bill text from body
+                let billText = $('body').text().trim();
+                
+                // Clean up the text
+                billText = billText
+                  .replace(/\s+/g, ' ')
+                  .replace(/\n\s*\n/g, '\n')
+                  .trim();
+                
+                if (billText.length > 200) {
+                  result.billText = billText;
+                  console.log(`✅ Found bill text for ${billNumber} version ${version} in session ${session}`);
+                  break; // Found text, stop trying versions
+                }
+              }
+            } catch (textError) {
+              // Continue to next version
+            }
+          }
+        } catch (textError) {
+          console.log(`Bill text not found for ${billNumber} in session ${session}`);
+        }
+        
+        // If we found either summary or bill text, return the result
+        if (result.billText.length > 100 || result.summary.length > 50) {
+          console.log(`✅ Found content for ${billNumber} in session ${session}`);
+          console.log(`  - Bill text: ${result.billText.length} characters`);
+          console.log(`  - Summary: ${result.summary.length} characters`);
+          return result;
+        }
+      }
+      
+      return { billText: '', summary: '' };
+    } catch (error) {
+      console.warn(`Error fetching bill content for ${billNumber}:`, error.message);
+      return { billText: '', summary: '' };
+    }
+  }
+
+  /**
+   * Format bill number for document URL (e.g., SB1 -> SB00001)
+   * @param {string} billNumber - Bill number like "SB1"
+   * @returns {string} Formatted bill number like "SB00001"
+   */
+  formatBillNumberForDocument(billNumber) {
+    const match = billNumber.match(/^([A-Z]+)(\d+)$/);
+    if (match) {
+      const prefix = match[1];
+      const number = match[2].padStart(5, '0');
+      return prefix + number;
+    }
+    return billNumber;
+  }
+
+  /**
+   * Fetch bill text from direct document URLs (fallback method)
+   * @param {string} billNumber - Standardized bill number
+   * @returns {Promise<string>} Bill text content
+   */
+  async fetchBillTextFromDirectUrls(billNumber) {
+    // Try HTML first, then PDF
+    const htmlText = await this.fetchBillTextFromHTML(billNumber);
+    if (htmlText && htmlText.length > 100) {
+      return htmlText;
+    }
+    
+    const pdfText = await this.fetchBillTextFromPDF(billNumber);
+    return pdfText || '';
+  }
+
+  /**
+   * Fetch bill text from HTML version (direct document URLs)
+   * @param {string} billNumber - Standardized bill number
+   * @returns {Promise<string>} Bill text content
+   */
+  async fetchBillTextFromHTML(billNumber) {
+    try {
+      // Try different session formats and URL patterns
+      const sessions = ['89R', '88R', '87R']; // Current and recent sessions
+      const urlPatterns = [
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/html/${bill}00001I.HTM`,
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/html/${bill}00001F.HTM`,
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/html/${bill}00001E.HTM`,
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/html/${bill}.HTM`
+      ];
+      
+      for (const session of sessions) {
+        for (const pattern of urlPatterns) {
+          try {
+            const textUrl = pattern(session, billNumber);
+            console.log(`🔗 Trying HTML text URL: ${textUrl}`);
+            
+            const response = await axios.get(textUrl, {
+              timeout: 10000,
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
+              }
+            });
+            
+            if (response.status === 200 && response.data) {
+              const $ = cheerio.load(response.data);
+              
+              // Remove script and style elements
+              $('script, style, nav, header, footer').remove();
+              
+              // Extract text content
+              let text = $('body').text() || '';
+              
+              // Clean up the text
+              text = text
+                .replace(/\s+/g, ' ')
+                .replace(/\n\s*\n/g, '\n')
+                .trim();
+              
+              if (text.length > 100) {
+                console.log(`✅ Found HTML text for ${billNumber} in session ${session}`);
+                return text;
+              }
+            }
+          } catch (urlError) {
+            if (urlError.response?.status !== 404) {
+              console.warn(`Error with URL pattern:`, urlError.message);
+            }
+          }
+        }
+      }
+      
+      return '';
+    } catch (error) {
+      console.warn(`Error fetching HTML text for ${billNumber}:`, error.message);
+      return '';
+    }
+  }
+
+  /**
+   * Fetch bill text from PDF version
+   * @param {string} billNumber - Standardized bill number
+   * @returns {Promise<string>} Bill text content
+   */
+  async fetchBillTextFromPDF(billNumber) {
+    if (!pdfParse) {
+      console.log('📄 PDF parsing not available, skipping PDF text extraction');
+      return '';
+    }
+    
+    try {
+      // Try different sessions and PDF formats
+      const sessions = ['89R', '88R', '87R'];
+      const pdfPatterns = [
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/pdf/${bill}00001I.pdf`,
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/pdf/${bill}00001F.pdf`,
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/pdf/${bill}00001E.pdf`,
+        (session, bill) => `https://capitol.texas.gov/tlodocs/${session}/billtext/pdf/${bill}.pdf`
+      ];
+      
+      for (const session of sessions) {
+        for (const pattern of pdfPatterns) {
+          try {
+            const pdfUrl = pattern(session, billNumber);
+            console.log(`🔗 Trying PDF URL: ${pdfUrl}`);
+            
+            const response = await axios.get(pdfUrl, {
+              timeout: 15000,
+              responseType: 'arraybuffer',
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
+              }
+            });
+            
+            if (response.status === 200 && response.data) {
+              console.log(`📄 Parsing PDF content for ${billNumber}...`);
+              const pdfData = await pdfParse(response.data);
+              
+              if (pdfData.text && pdfData.text.length > 100) {
+                // Clean up PDF text
+                let text = pdfData.text
+                  .replace(/\f/g, '\n') // Replace form feeds with newlines
+                  .replace(/\s+/g, ' ')
+                  .replace(/\n\s*\n/g, '\n')
+                  .trim();
+                
+                console.log(`✅ Successfully extracted ${text.length} characters from PDF in session ${session}`);
+                return text;
+              }
+            }
+          } catch (pdfError) {
+            if (pdfError.response?.status !== 404) {
+              console.warn(`Error with PDF pattern:`, pdfError.message);
+            }
+          }
+        }
+      }
+      
+      return '';
+    } catch (error) {
+      console.error(`Error fetching PDF text for ${billNumber}:`, error.message);
+      return '';
+    }
+  }
+
+  /**
+   * Get bill text URL for a given bill number
+   * @param {string} billNumber - Standardized bill number
+   * @returns {string} URL to bill text
+   */
+  getBillTextUrl(billNumber) {
+    return `https://capitol.texas.gov/BillLookup/Text.aspx?LegSess=88R&Bill=${billNumber}`;
+  }
 
   /**
    * Get detailed information for a specific bill

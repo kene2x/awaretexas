@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Bill Details</title>
+    <link href="styles/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Bill Detail Debug Page</h1>
+        <div id="debug-output" class="bg-white p-4 rounded shadow"></div>
+    </div>
+
+    <script>
+        const debugOutput = document.getElementById('debug-output');
+        
+        function log(message) {
+            console.log(message);
+            debugOutput.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        // Test URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const billId = urlParams.get('id');
+        log('Bill ID from URL: ' + billId);
+        
+        // Test API call
+        if (billId) {
+            log('Testing API call to: /api/bills/' + billId);
+            
+            fetch('/api/bills/' + encodeURIComponent(billId))
+                .then(response => {
+                    log('Response status: ' + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    log('API Response: ' + JSON.stringify(data, null, 2));
+                    if (data.success) {
+                        log('✅ API call successful!');
+                        log('Bill title: ' + (data.data.shortTitle || data.data.fullTitle));
+                    } else {
+                        log('❌ API call failed: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    log('❌ Network error: ' + error.message);
+                });
+        } else {
+            log('❌ No bill ID provided in URL');
+        }
+        
+        // Test script loading
+        log('Testing script dependencies...');
+        setTimeout(() => {
+            log('window.errorBoundary: ' + (window.errorBoundary ? '✅' : '❌'));
+            log('window.enhancedFetch: ' + (window.enhancedFetch ? '✅' : '❌'));
+            log('window.loadingManager: ' + (window.loadingManager ? '✅' : '❌'));
+            log('window.apiOptimizer: ' + (window.apiOptimizer ? '✅' : '❌'));
+            log('window.performanceMonitor: ' + (window.performanceMonitor ? '✅' : '❌'));
+        }, 1000);
+    </script>
+    
+    <!-- Load the same scripts as bill-detail.html -->
+    <script src="js/error-boundary.js"></script>
+    <script src="js/cache-manager.js"></script>
+    <script src="js/loading-manager.js"></script>
+    <script src="js/api-optimizer.js"></script>
+    <script src="js/performance-monitor.js"></script>
+</body>
+</html>

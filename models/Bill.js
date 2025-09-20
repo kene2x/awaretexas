@@ -21,6 +21,12 @@
  * @property {Date} [filedDate] - Date the bill was filed
  * @property {Date} [lastUpdated] - Last update timestamp
  * @property {string[]} [topics] - Array of topic tags
+ * @property {Object} [voting] - Voting information for passed bills
+ * @property {number} [voting.republicanYes] - Republican yes votes
+ * @property {number} [voting.republicanNo] - Republican no votes
+ * @property {number} [voting.democratYes] - Democrat yes votes
+ * @property {number} [voting.democratNo] - Democrat no votes
+ * @property {Date} [voting.voteDate] - Date of the vote
  */
 
 /**
@@ -48,6 +54,7 @@ class Bill {
     this.filedDate = data.filedDate || null;
     this.lastUpdated = data.lastUpdated || new Date();
     this.topics = data.topics || [];
+    this.voting = data.voting || null;
   }
 
   /**
@@ -198,7 +205,8 @@ class Bill {
       coSponsors: this.coSponsors,
       filedDate: this.filedDate,
       lastUpdated: this.lastUpdated,
-      topics: this.topics
+      topics: this.topics,
+      voting: this.voting
     };
   }
 }

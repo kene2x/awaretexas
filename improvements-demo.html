@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvements Demo - Texas Senate Bill Tracker</title>
+    <link href="frontend/styles/output.css" rel="stylesheet">
+    <script src="frontend/js/voting-chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .demo-section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background: #f8f9fa; padding: 15px; overflow-x: auto; border-radius: 4px; }
+        .chart-container { display: flex; justify-content: center; margin: 20px 0; }
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .before, .after { padding: 15px; border-radius: 8px; }
+        .before { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .after { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .result { margin: 15px 0; padding: 15px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🎉 Texas Senate Bill Tracker - Improvements Demo</h1>
+    <p>This page demonstrates the three major improvements made to the system:</p>
+
+    <!-- Improvement 1: AI Summaries -->
+    <div class="demo-section info">
+        <h2>1. ✅ Fixed AI Summary Generation</h2>
+        <p><strong>Problem:</strong> AI was returning raw bill text instead of generating proper summaries.</p>
+        <p><strong>Solution:</strong> Updated to Gemini 1.5-flash model with improved prompts and better text processing.</p>
+        
+        <div class="comparison">
+            <div class="before">
+                <h4>❌ Before (Raw Text)</h4>
+                <p><em>"1 AN ACT relating to campground and youth camp safety. BE IT ENACTED BY THE LEGISLATURE..."</em></p>
+            </div>
+            <div class="after">
+                <h4>✅ After (AI Generated)</h4>
+                <p><em>"This Texas bill improves safety at youth camps and campgrounds. It adds stricter rules about locations, requires better emergency plans and safety procedures, and mandates online registration."</em></p>
+            </div>
+        </div>
+
+        <button onclick="testAISummary()">Test AI Summary Generation</button>
+        <div id="ai-summary-result" class="result"></div>
+    </div>
+
+    <!-- Improvement 2: News Relevance -->
+    <div class="demo-section info">
+        <h2>2. ✅ Improved News Article Relevance</h2>
+        <p><strong>Problem:</strong> News articles were often unrelated to bills due to broad search parameters.</p>
+        <p><strong>Solution:</strong> Added Gemini AI validation to verify article relevance before displaying.</p>
+        
+        <div class="comparison">
+            <div class="before">
+                <h4>❌ Before</h4>
+                <p>• Showed articles about general Texas news<br>
+                • Sports, weather, entertainment mixed in<br>
+                • Low relevance to actual bills</p>
+            </div>
+            <div class="after">
+                <h4>✅ After</h4>
+                <p>• AI validates each article's relevance<br>
+                • Only shows legislative-related content<br>
+                • Better keyword extraction and filtering</p>
+            </div>
+        </div>
+
+        <button onclick="testNewsRelevance()">Test News Relevance</button>
+        <div id="news-result" class="result"></div>
+    </div>
+
+    <!-- Improvement 3: Voting Charts -->
+    <div class="demo-section success">
+        <h2>3. 🆕 New Feature: Voting Pie Charts</h2>
+        <p><strong>Feature:</strong> Visual representation of Republican vs Democrat voting patterns on passed bills.</p>
+        <p><strong>Implementation:</strong> SVG-based pie charts with red/blue color coding and detailed breakdowns.</p>
+        
+        <h4>Sample Voting Data:</h4>
+        <div class="chart-container">
+            <div>
+                <h5>SB1 - Camp Safety Act</h5>
+                <div id="sample-chart-1"></div>
+            </div>
+        </div>
+
+        <button onclick="createSampleCharts()">Show Voting Charts</button>
+        <div id="voting-result" class="result"></div>
+    </div>
+
+    <!-- Improvement 4: Abstract Formatting -->
+    <div class="demo-section info">
+        <h2>4. ✅ Fixed Abstract Formatting</h2>
+        <p><strong>Problem:</strong> Official abstracts had poor text formatting and readability.</p>
+        <p><strong>Solution:</strong> Added text cleaning and paragraph formatting for better readability.</p>
+        
+        <button onclick="testAbstractFormatting()">Test Abstract Formatting</button>
+        <div id="abstract-result" class="result"></div>
+    </div>
+
+    <!-- Technical Details -->
+    <div class="demo-section warning">
+        <h2>🔧 Technical Improvements</h2>
+        <ul>
+            <li><strong>Gemini Model Update:</strong> Switched from deprecated 'gemini-pro' to 'gemini-1.5-flash'</li>
+            <li><strong>Better Prompts:</strong> More specific instructions for summary generation</li>
+            <li><strong>AI Validation:</strong> Two-pass filtering for news articles (basic + AI validation)</li>
+            <li><strong>Text Processing:</strong> Improved handling of ellipsis and sentence completion</li>
+            <li><strong>Voting Data Model:</strong> Added voting fields to bill schema</li>
+            <li><strong>SVG Charts:</strong> Lightweight, responsive pie charts with legends</li>
+        </ul>
+    </div>
+
+    <script>
+        async function testAISummary() {
+            const resultDiv = document.getElementById('ai-summary-result');
+            resultDiv.innerHTML = 'Testing AI summary generation...';
+            
+            try {
+                const response = await fetch('/api/bills/summary/SB1', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ readingLevel: 'high-level', forceRegenerate: true })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ AI Summary Generated Successfully</h4>
+                        <p><strong>Summary:</strong> "${data.data.summary}"</p>
+                        <p><strong>Reading Level:</strong> ${data.data.readingLevel}</p>
+                        <p><strong>Generated At:</strong> ${new Date(data.data.generatedAt).toLocaleString()}</p>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultDiv.className = 'result before';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testNewsRelevance() {
+            const resultDiv = document.getElementById('news-result');
+            resultDiv.innerHTML = 'Testing news relevance with AI validation...';
+            
+            try {
+                const response = await fetch('/api/bills/news/SB1');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ News Articles Found (AI Validated)</h4>
+                        <p><strong>Articles Found:</strong> ${data.data.count}</p>
+                        <div style="margin-top: 15px;">
+                            ${data.data.articles.map(article => `
+                                <div style="margin: 10px 0; padding: 10px; border-left: 3px solid #28a745;">
+                                    <strong>${article.headline}</strong><br>
+                                    <small>Source: ${article.source}</small><br>
+                                    <p style="margin: 5px 0; color: #666;">${article.description}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                resultDiv.className = 'result before';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        function createSampleCharts() {
+            // Sample voting data for SB1
+            const sb1Voting = {
+                republicanYes: 18,
+                republicanNo: 2,
+                democratYes: 8,
+                democratNo: 3,
+                voteDate: '2025-05-15T10:30:00Z'
+            };
+            
+            if (window.votingChart) {
+                window.votingChart.createDetailChart('sample-chart-1', sb1Voting);
+                
+                const resultDiv = document.getElementById('voting-result');
+                resultDiv.className = 'result success';
+                resultDiv.innerHTML = `
+                    <h4>✅ Voting Chart Created</h4>
+                    <p>The chart above shows the voting breakdown for SB1:</p>
+                    <ul>
+                        <li><span style="color: #DC2626;">●</span> Republicans: ${sb1Voting.republicanYes + sb1Voting.republicanNo} votes (${sb1Voting.republicanYes} Yes, ${sb1Voting.republicanNo} No)</li>
+                        <li><span style="color: #2563EB;">●</span> Democrats: ${sb1Voting.democratYes + sb1Voting.democratNo} votes (${sb1Voting.democratYes} Yes, ${sb1Voting.democratNo} No)</li>
+                    </ul>
+                    <p><strong>Total Votes:</strong> ${sb1Voting.republicanYes + sb1Voting.republicanNo + sb1Voting.democratYes + sb1Voting.democratNo}</p>
+                `;
+            } else {
+                const resultDiv = document.getElementById('voting-result');
+                resultDiv.className = 'result before';
+                resultDiv.innerHTML = '<h4>❌ Error</h4><p>Voting chart library not loaded</p>';
+            }
+        }
+        
+        async function testAbstractFormatting() {
+            const resultDiv = document.getElementById('abstract-result');
+            resultDiv.innerHTML = 'Testing abstract formatting...';
+            
+            try {
+                const response = await fetch('/api/bills/SB1');
+                const data = await response.json();
+                
+                if (data.success && data.data.abstract) {
+                    const abstract = data.data.abstract;
+                    
+                    // Simulate the formatAbstract function
+                    let formatted = abstract
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .replace(/SECTION\s+(\d+)/gi, '<br><strong>Section $1</strong>')
+                        .replace(/\.\s*SECTION/g, '.<br><br><strong>SECTION</strong>')
+                        .replace(/\.\s+([A-Z][a-z])/g, '.<br><br>$1');
+                    
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Abstract Formatting Applied</h4>
+                        <div class="comparison">
+                            <div class="before">
+                                <h5>Before:</h5>
+                                <pre>${abstract}</pre>
+                            </div>
+                            <div class="after">
+                                <h5>After:</h5>
+                                <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px;">${formatted}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('No abstract found');
+                }
+            } catch (error) {
+                resultDiv.className = 'result before';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        }
+        
+        // Auto-create sample chart on load
+        window.addEventListener('load', () => {
+            setTimeout(createSampleCharts, 500);
+        });
+    </script>
+</body>
+</html>

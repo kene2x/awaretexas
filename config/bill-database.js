@@ -1,20 +1,15 @@
 // Specialized database operations for Bills collection
 const { crudOperations } = require('./crud-operations');
+const { idStandardizer } = require('./id-standardizer');
 
 class BillDatabase {
   constructor() {
     this.collection = 'bills';
   }
 
-  // Normalize a billNumber or id to canonical document id (e.g., 'SB 1' -> 'SB1')
+  // Normalize a billNumber or id to canonical document id using the standardizer
   normalizeDocId(rawId) {
-    if (!rawId) return null;
-    try {
-      // Remove whitespace and make uppercase
-      return String(rawId).replace(/\s+/g, '').toUpperCase();
-    } catch (e) {
-      return String(rawId);
-    }
+    return idStandardizer.standardize(rawId);
   }
 
   // Create or update a bill

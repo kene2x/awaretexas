@@ -1,80 +1,131 @@
-// Texas Senate Bill Tracker - Bill Detail Page
+// Texas Senate Bill Tracker - Bill Detail Page (Enhanced with Debug Logging)
 class BillDetailApp {
     constructor() {
+        console.log('🚀 BillDetailApp constructor started');
+
         this.billId = null;
         this.bill = null;
         this.summary = null;
-        
+
+        console.log('📋 Initializing elements...');
         this.initializeElements();
+
+        console.log('🔍 Extracting bill ID...');
         this.extractBillId();
+
+        console.log('📥 Loading bill details...');
         this.loadBillDetails();
+
+        console.log('✅ BillDetailApp constructor completed');
     }
 
     initializeElements() {
+        console.log('🔧 Getting DOM elements...');
+
         this.loadingElement = document.getElementById('loading');
         this.billDetailContent = document.getElementById('bill-detail-content');
         this.errorState = document.getElementById('error-state');
         this.errorMessage = document.getElementById('error-message');
-        
+
         // Component containers
         this.billHeaderElement = document.getElementById('bill-header');
         this.sponsorInfoElement = document.getElementById('sponsor-info');
         this.summarySectionElement = document.getElementById('summary-section');
         this.newsSectionElement = document.getElementById('news-section');
         this.officialLinkElement = document.getElementById('official-link');
+
+        // Debug: Check if all elements were found
+        const elements = {
+            loading: this.loadingElement,
+            billDetailContent: this.billDetailContent,
+            errorState: this.errorState,
+            errorMessage: this.errorMessage,
+            billHeader: this.billHeaderElement,
+            sponsorInfo: this.sponsorInfoElement,
+            summarySection: this.summarySectionElement,
+            newsSection: this.newsSectionElement,
+            officialLink: this.officialLinkElement
+        };
+
+        console.log('🔍 DOM elements found:', elements);
+
+        // Warn about missing elements
+        Object.entries(elements).forEach(([name, element]) => {
+            if (!element) {
+                console.warn(`⚠️ Missing DOM element: ${name}`);
+            }
+        });
     }
 
     extractBillId() {
-        // Extract bill ID from URL parameters
+        console.log('🔍 Extracting bill ID from URL...');
+        console.log('📍 Current URL:', window.location.href);
+
         const urlParams = new URLSearchParams(window.location.search);
         this.billId = urlParams.get('id');
-        
+
+        console.log('🆔 Raw bill ID from URL:', this.billId);
+        console.log('🆔 Decoded bill ID:', this.billId ? decodeURIComponent(this.billId) : null);
+
         if (!this.billId) {
+            console.error('❌ No bill ID provided in URL');
             this.showError('No bill ID provided in URL');
             return;
         }
+
+        console.log('✅ Bill ID extracted successfully:', this.billId);
     }
 
 
 
     async loadBillDetails() {
+        console.log('📥 loadBillDetails() started');
+
         if (!this.billId) {
+            console.error('❌ No bill ID provided for loading');
+            this.showError('No bill ID provided in URL');
             return;
         }
 
-        const wrappedLoadDetails = window.errorBoundary.wrapAsync(async () => {
-            // Show skeleton loading for better UX
-            if (window.loadingManager) {
-                window.loadingManager.showBillDetailSkeleton(this.billDetailContent);
-            } else {
-                this.showLoading();
-            }
-            
-            // Use enhanced fetch with retry logic, fallback to regular fetch
-            const response = window.enhancedFetch ? 
-                await window.enhancedFetch.fetch(`/api/bills/${this.billId}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                }, {
-                    maxRetries: 3,
-                    retryCondition: (error, response) => {
-                        return !response || 
-                               response.status >= 500 || 
-                               response.status === 429 ||
-                               error?.name === 'TypeError' ||
-                               error?.message?.includes('network');
-                    }
-                }) :
-                await fetch(`/api/bills/${this.billId}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-            
+        console.log('🆔 Loading bill details for ID:', this.billId);
+
+        try {
+            // Show loading state
+            console.log('⏳ Showing loading state...');
+            this.showLoading();
+
+            // Prepare API call
+            const apiUrl = `/api/bills/${encodeURIComponent(this.billId)}`;
+            console.log('🌐 Making API call to:', apiUrl);
+            console.log('🔗 Encoded bill ID:', encodeURIComponent(this.billId));
+
+            // Make API call with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                console.warn('⏰ API call timeout after 15 seconds');
+                controller.abort();
+            }, 15000);
+
+            const response = await fetch(apiUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            console.log('📡 Response received:');
+            console.log('  - Status:', response.status);
+            console.log('  - Status Text:', response.statusText);
+            console.log('  - OK:', response.ok);
+            console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
+
             if (!response.ok) {
+                const errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                console.error('❌ API call failed:', errorMsg);
+
                 if (response.status === 404) {
                     throw new Error('Bill not found. It may have been removed or the ID is incorrect.');
                 } else if (response.status >= 500) {
@@ -85,64 +136,93 @@ class BillDetailApp {
                     throw new Error(`Failed to load bill details (${response.status}). Please try again.`);
                 }
             }
-            
+
+            console.log('📄 Parsing JSON response...');
             const data = await response.json();
-            
-            // Handle both new API format and legacy format
+            console.log('📊 Raw API response:', data);
+
+            // Handle API response format
             this.bill = data.data || data.bill || data;
+            console.log('🏛️ Extracted bill data:', this.bill);
 
             if (!this.bill) {
-                throw new Error('Invalid bill data received from server.');
+                console.error('❌ No bill data in response');
+                throw new Error('No bill data received from server');
             }
 
-            // Defensive normalization: ensure we have a stable id and arrays where expected
-            try {
-                // Ensure id exists: prefer existing id, else normalize billNumber
-                if (!this.bill.id) {
-                    if (this.bill.billNumber) {
-                        this.bill.id = String(this.bill.billNumber).replace(/\s+/g, '').toUpperCase();
-                    } else if (this.bill.billNumber === undefined && this.bill.id === undefined) {
-                        // last resort: use shortTitle hash
-                        this.bill.id = ('bill-' + Math.abs(hashCode(this.bill.shortTitle || this.bill.fullTitle || 'unknown'))).toUpperCase();
-                    }
-                }
+            // Validate required fields
+            console.log('✅ Bill data validation:');
+            console.log('  - Bill Number:', this.bill.billNumber);
+            console.log('  - Short Title:', this.bill.shortTitle);
+            console.log('  - Status:', this.bill.status);
+            console.log('  - Sponsors:', this.bill.sponsors);
 
-                // Ensure sponsors, topics, coSponsors are arrays
-                if (!Array.isArray(this.bill.sponsors)) this.bill.sponsors = this.bill.sponsors ? [this.bill.sponsors] : [];
-                if (!Array.isArray(this.bill.topics)) this.bill.topics = this.bill.topics ? [this.bill.topics] : [];
-                if (!Array.isArray(this.bill.coSponsors)) this.bill.coSponsors = this.bill.coSponsors ? this.bill.coSponsors : [];
-            } catch (normalizeError) {
-                console.warn('Warning: failed to normalize bill data', normalizeError);
+            // Ensure required arrays exist
+            console.log('🔧 Normalizing bill data...');
+            if (!Array.isArray(this.bill.sponsors)) {
+                console.log('  - Converting sponsors to array');
+                this.bill.sponsors = this.bill.sponsors ? [this.bill.sponsors] : [];
             }
-            
+            if (!Array.isArray(this.bill.topics)) {
+                console.log('  - Converting topics to array');
+                this.bill.topics = this.bill.topics ? [this.bill.topics] : [];
+            }
+            if (!Array.isArray(this.bill.coSponsors)) {
+                console.log('  - Converting coSponsors to array');
+                this.bill.coSponsors = this.bill.coSponsors ? this.bill.coSponsors : [];
+            }
+
             // Update page title
-            document.title = `${this.bill.billNumber} - Texas Senate Bill Tracker`;
-            
-            // Render all components (wrapped to surface errors)
+            const pageTitle = `${this.bill.billNumber || this.billId} - Texas Senate Bill Tracker`;
+            console.log('📝 Updating page title to:', pageTitle);
+            document.title = pageTitle;
+
+            // Render components
+            console.log('🎨 Rendering bill components...');
             try {
+                console.log('  - Rendering bill header...');
                 this.renderBillHeader();
+
+                console.log('  - Rendering sponsor info...');
                 this.renderSponsorInfo();
+
+                console.log('  - Rendering summary section...');
                 this.renderSummarySection();
+
+                console.log('  - Rendering news section...');
                 this.renderNewsSection();
+
+                console.log('  - Rendering official link...');
                 this.renderOfficialLink();
+
+                console.log('  - Rendering voting chart...');
+                this.renderVotingChart();
+
+                console.log('✅ All components rendered successfully');
             } catch (renderError) {
-                console.error('Error rendering bill detail components:', renderError);
+                console.error('❌ Error rendering components:', renderError);
                 this.showError('Failed to render bill details. Check console for details.');
                 return;
             }
-            
-            this.hideLoading();
-        }, this);
 
-        try {
-            await wrappedLoadDetails();
+            // Hide loading, show content
+            console.log('🎉 Hiding loading state and showing content...');
+            this.hideLoading();
+
+            console.log('✅ Bill details loaded successfully!');
+
         } catch (error) {
-            console.error('Error loading bill details:', error);
-            
+            console.error('❌ Error in loadBillDetails:', error);
+            console.error('  - Error name:', error.name);
+            console.error('  - Error message:', error.message);
+            console.error('  - Error stack:', error.stack);
+
             // Enhanced error handling with specific error types
             let errorMessage = 'An unexpected error occurred while loading bill details.';
-            
-            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+
+            if (error.name === 'AbortError') {
+                errorMessage = 'Request timed out. Please check your connection and try again.';
+            } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
             } else if (error.message.includes('timeout')) {
                 errorMessage = 'The request timed out. The server may be experiencing high traffic. Please try again.';
@@ -151,7 +231,8 @@ class BillDetailApp {
             } else if (error.message) {
                 errorMessage = error.message;
             }
-            
+
+            console.error('📢 Showing error to user:', errorMessage);
             this.showError(errorMessage);
         }
     }
@@ -160,7 +241,7 @@ class BillDetailApp {
     async fallbackFetch(url) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
-        
+
         try {
             const response = await fetch(url, {
                 signal: controller.signal,
@@ -169,9 +250,9 @@ class BillDetailApp {
                     'Content-Type': 'application/json'
                 }
             });
-            
+
             clearTimeout(timeoutId);
-            
+
             if (!response.ok) {
                 if (response.status === 404) {
                     throw new Error('Bill not found. It may have been removed or the ID is incorrect.');
@@ -181,7 +262,7 @@ class BillDetailApp {
                     throw new Error(`Failed to load bill details (${response.status}). Please try again.`);
                 }
             }
-            
+
             return await response.json();
         } catch (error) {
             clearTimeout(timeoutId);
@@ -196,9 +277,9 @@ class BillDetailApp {
             'In Committee': 'bg-texas-blue bg-opacity-10 text-texas-blue border-texas-blue border-opacity-30',
             'Passed': 'bg-green-50 text-green-700 border-green-400'
         };
-        
+
         const statusColor = statusColors[this.bill.status] || 'bg-gray-50 text-gray-700 border-gray-300';
-        
+
         // Format dates if available
         const formatDate = (dateString) => {
             if (!dateString) return null;
@@ -285,7 +366,7 @@ class BillDetailApp {
         const sponsors = this.bill.sponsors || [];
         const primarySponsor = sponsors[0];
         const coSponsors = sponsors.slice(1);
-        
+
         if (!primarySponsor) {
             this.sponsorInfoElement.innerHTML = `
                 <div class="text-center py-8">
@@ -357,15 +438,15 @@ class BillDetailApp {
                         <h5 class="text-sm font-medium text-gray-700 mb-3">Co-Sponsors</h5>
                         <div class="space-y-2">
                             ${coSponsors.map(sponsor => {
-                                const name = getSponsorName(sponsor);
-                                const district = getSponsorDistrict(sponsor);
-                                return `
+            const name = getSponsorName(sponsor);
+            const district = getSponsorDistrict(sponsor);
+            return `
                                     <div class="flex items-center justify-between text-sm">
                                         <span class="text-gray-900">${name}</span>
                                         ${district ? `<span class="text-gray-500">District ${district}</span>` : ''}
                                     </div>
                                 `;
-                            }).join('')}
+        }).join('')}
                         </div>
                     </div>
                 ` : ''}
@@ -421,10 +502,17 @@ class BillDetailApp {
                     </div>
                 </div>
                 
+                ${this.bill.voting && (this.bill.status === 'Passed' || this.bill.status === 'Signed') ? `
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-700 mb-3">Voting Results</h4>
+                        <div id="voting-chart-container"></div>
+                    </div>
+                ` : ''}
+                
                 ${this.bill.abstract ? `
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <h4 class="text-sm font-medium text-gray-700 mb-2">Official Abstract</h4>
-                        <p class="text-sm text-gray-600 leading-relaxed">${this.bill.abstract}</p>
+                        <div class="text-sm text-gray-600 leading-relaxed">${this.formatAbstract(this.bill.abstract)}</div>
                     </div>
                 ` : ''}
             </div>
@@ -458,7 +546,7 @@ class BillDetailApp {
 
         try {
             // Use optimized fetch with caching for summaries
-            const data = await (window.apiOptimizer ? 
+            const data = await (window.apiOptimizer ?
                 window.apiOptimizer.optimizedFetch(`/api/bills/summary/${this.billId}`, {
                     method: 'POST',
                     headers: {
@@ -495,7 +583,7 @@ class BillDetailApp {
 
         } catch (error) {
             console.error('Error loading summary:', error);
-            
+
             // Update error message based on error type
             const summaryErrorElement = document.querySelector('#summary-error p');
             if (summaryErrorElement) {
@@ -511,7 +599,7 @@ class BillDetailApp {
                     summaryErrorElement.textContent = 'Unable to generate AI summary at this time. Please try again later.';
                 }
             }
-            
+
             summaryLoading.classList.add('hidden');
             summaryError.classList.remove('hidden');
         }
@@ -613,7 +701,7 @@ class BillDetailApp {
 
         try {
             // Use optimized fetch with caching for news
-            const data = await (window.apiOptimizer ? 
+            const data = await (window.apiOptimizer ?
                 window.apiOptimizer.optimizedFetch(`/api/bills/news/${this.billId}`, {
                     headers: {
                         'Accept': 'application/json',
@@ -639,14 +727,14 @@ class BillDetailApp {
             newsArticles.innerHTML = `
                 <div class="space-y-4">
                     ${articles.map(article => {
-                        const publishedDate = article.publishedAt ? 
-                            new Date(article.publishedAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                            }) : null;
+                const publishedDate = article.publishedAt ?
+                    new Date(article.publishedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    }) : null;
 
-                        return `
+                return `
                             <article class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                                 <div class="flex flex-col space-y-2">
                                     <h4 class="font-semibold text-gray-900 leading-tight">
@@ -698,7 +786,7 @@ class BillDetailApp {
                                 </div>
                             </article>
                         `;
-                    }).join('')}
+            }).join('')}
                 </div>
                 
                 <div class="mt-4 pt-4 border-t border-gray-200">
@@ -713,7 +801,7 @@ class BillDetailApp {
 
         } catch (error) {
             console.error('Error loading news:', error);
-            
+
             newsErrorMessage.textContent = error.message;
             newsLoading.classList.add('hidden');
             newsError.classList.remove('hidden');
@@ -746,8 +834,8 @@ class BillDetailApp {
 
     renderOfficialLink() {
         // Generate fallback URL if official URL is not available
-        const fallbackUrl = this.bill.billNumber ? 
-            `https://capitol.texas.gov/Search/BillSearchResults.aspx?NSP=1&SPL=False&SPC=False&SPA=True&SPV=False&SPS=False&SPD=False&SPM=False&SPT=False&SPN=False&SPH=False&SPE=False&SPR=False&SBO=False&Bill=${encodeURIComponent(this.bill.billNumber)}` : 
+        const fallbackUrl = this.bill.billNumber ?
+            `https://capitol.texas.gov/Search/BillSearchResults.aspx?NSP=1&SPL=False&SPC=False&SPA=True&SPV=False&SPS=False&SPD=False&SPM=False&SPT=False&SPN=False&SPH=False&SPE=False&SPR=False&SBO=False&Bill=${encodeURIComponent(this.bill.billNumber)}` :
             null;
 
         const linkUrl = this.bill.officialUrl || fallbackUrl;
@@ -772,10 +860,10 @@ class BillDetailApp {
                     </a>
                     
                     <p class="text-xs text-gray-500 mb-4">
-                        ${this.bill.officialUrl ? 
-                            'View the official bill page on the Texas Legislature Online website' : 
-                            'Search for this bill on the Texas Legislature Online website'
-                        }
+                        ${this.bill.officialUrl ?
+                    'View the official bill page on the Texas Legislature Online website' :
+                    'Search for this bill on the Texas Legislature Online website'
+                }
                     </p>
                 ` : `
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
@@ -866,7 +954,7 @@ ${this.bill.officialUrl ? `Official URL: ${this.bill.officialUrl}` : ''}
 View Details: ${window.location.href}`;
 
             await navigator.clipboard.writeText(billInfo);
-            
+
             // Show temporary success message
             this.showTemporaryMessage('Bill information copied to clipboard!', 'success');
         } catch (error) {
@@ -900,11 +988,10 @@ View Details: ${window.location.href}`;
     // Helper method to show temporary messages
     showTemporaryMessage(message, type = 'info') {
         const messageElement = document.createElement('div');
-        messageElement.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 ${
-            type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
+        messageElement.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 ${type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' :
             type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' :
-            'bg-blue-100 text-blue-800 border border-blue-200'
-        }`;
+                'bg-blue-100 text-blue-800 border border-blue-200'
+            }`;
         messageElement.textContent = message;
 
         document.body.appendChild(messageElement);
@@ -928,21 +1015,123 @@ View Details: ${window.location.href}`;
     }
 
     showLoading() {
-        this.loadingElement.classList.remove('hidden');
-        this.billDetailContent.classList.add('hidden');
-        this.errorState.classList.add('hidden');
+        console.log('⏳ showLoading() called');
+        console.log('  - Loading element exists:', !!this.loadingElement);
+        console.log('  - Bill content element exists:', !!this.billDetailContent);
+        console.log('  - Error state element exists:', !!this.errorState);
+
+        if (this.loadingElement) {
+            this.loadingElement.classList.remove('hidden');
+            console.log('  - Loading element shown');
+        }
+        if (this.billDetailContent) {
+            this.billDetailContent.classList.add('hidden');
+            console.log('  - Bill content hidden');
+        }
+        if (this.errorState) {
+            this.errorState.classList.add('hidden');
+            console.log('  - Error state hidden');
+        }
     }
 
     hideLoading() {
-        this.loadingElement.classList.add('hidden');
-        this.billDetailContent.classList.remove('hidden');
+        console.log('✅ hideLoading() called');
+        console.log('  - Loading element exists:', !!this.loadingElement);
+        console.log('  - Bill content element exists:', !!this.billDetailContent);
+
+        if (this.loadingElement) {
+            this.loadingElement.classList.add('hidden');
+            console.log('  - Loading element hidden');
+        }
+        if (this.billDetailContent) {
+            this.billDetailContent.classList.remove('hidden');
+            console.log('  - Bill content shown');
+        }
     }
 
     showError(message) {
-        this.loadingElement.classList.add('hidden');
-        this.billDetailContent.classList.add('hidden');
-        this.errorState.classList.remove('hidden');
-        this.errorMessage.textContent = message;
+        console.log('❌ showError() called with message:', message);
+        console.log('  - Loading element exists:', !!this.loadingElement);
+        console.log('  - Bill content element exists:', !!this.billDetailContent);
+        console.log('  - Error state element exists:', !!this.errorState);
+        console.log('  - Error message element exists:', !!this.errorMessage);
+
+        if (this.loadingElement) {
+            this.loadingElement.classList.add('hidden');
+            console.log('  - Loading element hidden');
+        }
+        if (this.billDetailContent) {
+            this.billDetailContent.classList.add('hidden');
+            console.log('  - Bill content hidden');
+        }
+        if (this.errorState) {
+            this.errorState.classList.remove('hidden');
+            console.log('  - Error state shown');
+        }
+        if (this.errorMessage) {
+            this.errorMessage.textContent = message;
+            console.log('  - Error message set');
+        }
+    }
+
+    /**
+     * Render voting chart if voting data is available
+     */
+    renderVotingChart() {
+        if (this.bill.voting && (this.bill.status === 'Passed' || this.bill.status === 'Signed')) {
+            // Ensure voting chart script is loaded
+            if (window.votingChart) {
+                setTimeout(() => {
+                    window.votingChart.createDetailChart('voting-chart-container', this.bill.voting);
+                }, 100);
+            } else {
+                console.warn('Voting chart library not loaded');
+            }
+        }
+    }
+
+    /**
+     * Format and clean up the official abstract text
+     * @param {string} abstract - Raw abstract text
+     * @returns {string} Formatted HTML
+     */
+    formatAbstract(abstract) {
+        if (!abstract) return '';
+
+        // Clean up common formatting issues
+        let formatted = abstract
+            // Remove excessive whitespace
+            .replace(/\s+/g, ' ')
+            .trim()
+            // Fix common legislative text formatting
+            .replace(/SECTION\s+(\d+)/gi, '<br><strong>Section $1</strong>')
+            .replace(/\.\s*SECTION/g, '.<br><br><strong>SECTION</strong>')
+            // Add line breaks for better readability
+            .replace(/\.\s+([A-Z][a-z])/g, '.<br><br>$1')
+            // Clean up multiple periods
+            .replace(/\.{2,}/g, '.')
+            // Fix spacing around parentheses
+            .replace(/\(\s+/g, '(')
+            .replace(/\s+\)/g, ')')
+            // Clean up quotes
+            .replace(/"\s+/g, '"')
+            .replace(/\s+"/g, '"');
+
+        // Split into paragraphs for better readability
+        const sentences = formatted.split(/\.\s+/);
+        if (sentences.length > 3) {
+            // Group sentences into paragraphs
+            const paragraphs = [];
+            for (let i = 0; i < sentences.length; i += 2) {
+                const paragraph = sentences.slice(i, i + 2).join('. ');
+                if (paragraph.trim()) {
+                    paragraphs.push(`<p class="mb-2">${paragraph}${paragraph.endsWith('.') ? '' : '.'}</p>`);
+                }
+            }
+            return paragraphs.join('');
+        } else {
+            return `<p>${formatted}</p>`;
+        }
     }
 }
 
@@ -958,24 +1147,72 @@ function hashCode(str) {
     return hash;
 }
 
-// Initialize the application when the DOM is loaded and dependencies are ready
+// Initialize the application when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Wait for all dependencies to be ready
-    const initializeApp = () => {
-        if (window.enhancedFetch && window.errorBoundary) {
-            // Initialize with performance monitoring
-            if (window.performanceMonitor) {
-                window.performanceMonitor.measureRender('bill-detail-init', () => {
-                    window.billDetailApp = new BillDetailApp();
-                });
-            } else {
-                window.billDetailApp = new BillDetailApp();
-            }
+    console.log('🚀 DOM loaded, initializing bill detail app...');
+    console.log('📍 Current URL:', window.location.href);
+    console.log('🌐 User Agent:', navigator.userAgent);
+    console.log('📱 Screen size:', `${window.innerWidth}x${window.innerHeight}`);
+
+    // Check for required DOM elements
+    const requiredElements = [
+        'loading',
+        'bill-detail-content',
+        'error-state',
+        'error-message',
+        'bill-header',
+        'sponsor-info',
+        'summary-section',
+        'news-section',
+        'official-link'
+    ];
+
+    console.log('🔍 Checking for required DOM elements...');
+    const missingElements = [];
+    requiredElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            console.log(`  ✅ Found: #${id}`);
         } else {
-            // Dependencies not ready, wait a bit and try again
-            setTimeout(initializeApp, 100);
+            console.error(`  ❌ Missing: #${id}`);
+            missingElements.push(id);
         }
-    };
-    
-    initializeApp();
+    });
+
+    if (missingElements.length > 0) {
+        console.error('❌ Missing required DOM elements:', missingElements);
+    }
+
+    // Check for dependencies (optional)
+    console.log('🔍 Checking for optional dependencies...');
+    console.log('  - window.errorBoundary:', typeof window.errorBoundary);
+    console.log('  - window.enhancedFetch:', typeof window.enhancedFetch);
+    console.log('  - window.loadingManager:', typeof window.loadingManager);
+    console.log('  - window.apiOptimizer:', typeof window.apiOptimizer);
+    console.log('  - window.performanceMonitor:', typeof window.performanceMonitor);
+
+    // Initialize immediately - don't wait for dependencies
+    try {
+        console.log('🎯 Creating BillDetailApp instance...');
+        window.billDetailApp = new BillDetailApp();
+        console.log('✅ Bill detail app initialized successfully');
+        console.log('📊 App instance:', window.billDetailApp);
+    } catch (error) {
+        console.error('❌ Failed to initialize bill detail app:', error);
+        console.error('  - Error name:', error.name);
+        console.error('  - Error message:', error.message);
+        console.error('  - Error stack:', error.stack);
+
+        // Show error message to user
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-md z-50';
+        errorDiv.innerHTML = `
+            <strong>Initialization Error:</strong><br>
+            ${error.message}<br>
+            <button onclick="location.reload()" class="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm">
+                Reload Page
+            </button>
+        `;
+        document.body.appendChild(errorDiv);
+    }
 });
