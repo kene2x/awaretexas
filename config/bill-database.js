@@ -6,10 +6,22 @@ class BillDatabase {
     this.collection = 'bills';
   }
 
+  // Normalize a billNumber or id to canonical document id (e.g., 'SB 1' -> 'SB1')
+  normalizeDocId(rawId) {
+    if (!rawId) return null;
+    try {
+      // Remove whitespace and make uppercase
+      return String(rawId).replace(/\s+/g, '').toUpperCase();
+    } catch (e) {
+      return String(rawId);
+    }
+  }
+
   // Create or update a bill
   async saveBill(billData) {
     try {
-      const billId = billData.billNumber || billData.id;
+      const rawId = billData.billNumber || billData.id;
+      const billId = this.normalizeDocId(rawId);
       if (!billId) {
         throw new Error('Bill must have billNumber or id');
       }
@@ -17,7 +29,7 @@ class BillDatabase {
       // Validate required fields
       this.validateBillData(billData);
 
-      const existingBill = await crudOperations.read(this.collection, billId);
+  const existingBill = await crudOperations.read(this.collection, billId);
       
       if (existingBill) {
         return await crudOperations.update(this.collection, billId, billData);
@@ -33,7 +45,8 @@ class BillDatabase {
   // Get a specific bill
   async getBill(billId) {
     try {
-      return await crudOperations.read(this.collection, billId);
+      const id = this.normalizeDocId(billId);
+      return await crudOperations.read(this.collection, id);
     } catch (error) {
       console.error(`❌ Failed to get bill ${billId}:`, error.message);
       throw error;
@@ -73,12 +86,16 @@ class BillDatabase {
   // Batch save multiple bills
   async saveBills(billsArray) {
     try {
-      const operations = billsArray.map(bill => ({
-        type: 'set',
-        collection: this.collection,
-        docId: bill.billNumber || bill.id,
-        data: bill
-      }));
+      const operations = billsArray.map(bill => {
+        const rawId = bill.billNumber || bill.id;
+        const docId = this.normalizeDocId(rawId);
+        return {
+          type: 'set',
+          collection: this.collection,
+          docId,
+          data: bill
+        };
+      });
 
       return await crudOperations.batchWrite(operations);
     } catch (error) {

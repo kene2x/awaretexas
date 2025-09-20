@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { billDatabase } = require('../../config/bill-database');
+const { databaseService } = require('../../config/database');
 const { summaryService } = require('../../services/ai-summary');
 const { newsService } = require('../../services/news');
 const Bill = require('../../models/Bill');
@@ -57,8 +58,11 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
     const billInstances = bills.map(billData => {
       try {
         const bill = new Bill(billData);
+        // Ensure the frontend receives a stable canonical id used for navigation
+        const canonicalId = require('../../config/bill-database').billDatabase.normalizeDocId(billData.id || billData.billNumber);
         return {
           ...bill.toJSON(),
+          id: canonicalId,
           statusColor: bill.getStatusColor(),
           previewSummary: bill.getPreviewSummary()
         };
@@ -90,17 +94,79 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
  */
 router.get('/:id', cacheMiddleware.middleware(900), asyncHandler(async (req, res) => { // Cache for 15 minutes
   const { id } = req.params;
-  
+
   if (!id) {
     throw new AppError('Bill ID is required', 'VALIDATION_ERROR');
   }
-  
-  const billData = await billDatabase.getBill(id);
-  
+
+  // If database is not connected, treat this as a server/database error
+  if (!databaseService.isConnected) {
+    throw new AppError('Database not connected', 'DATABASE_ERROR', 500);
+  }
+
+  // Try multiple lookup strategies to handle different document id formats
+  let billData = null;
+  try {
+    // 1) Direct lookup by provided id
+    billData = await billDatabase.getBill(id);
+
+    // 2) Try decoded id (in case of encoded spaces or characters)
+    if (!billData) {
+      const decoded = decodeURIComponent(id);
+      if (decoded !== id) {
+        billData = await billDatabase.getBill(decoded).catch(() => null);
+      }
+    }
+
+    // 3) Try several normalized variants (uppercase, lowercase, remove spaces)
+    if (!billData) {
+      const variants = new Set();
+      const add = v => v && variants.add(String(v));
+      add(id);
+      add(id.toUpperCase());
+      add(id.toLowerCase());
+      add(id.replace(/\s+/g, ''));
+      add(id.replace(/\s+/g, '').toUpperCase());
+      add(id.replace(/\s+/g, '').toLowerCase());
+      // Try inserting space between letters and digits (e.g., SB1 -> SB 1)
+      add(id.replace(/([A-Za-z]+)(\d+)/, '$1 $2'));
+      add(id.replace(/([A-Za-z]+)\s*(\d+)/, '$1$2'));
+
+      for (const candidate of variants) {
+        try {
+          billData = await billDatabase.getBill(candidate);
+          if (billData) break;
+        } catch (e) {
+          // ignore and continue
+        }
+      }
+    }
+
+    // 4) Fallback: try querying by the billNumber field using CRUD helper
+    if (!billData) {
+      const { crudOperations } = require('../../config/crud-operations');
+      const candidates = [id, decodeURIComponent(id), id.replace(/\s+/g, ''), id.toUpperCase(), id.toLowerCase()];
+      for (const candidate of candidates) {
+        try {
+          const results = await crudOperations.findWhere('bills', 'billNumber', '==', candidate, 1);
+          if (results && results.length > 0) {
+            billData = results[0];
+            break;
+          }
+        } catch (e) {
+          // ignore and continue
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error looking up bill ${id}:`, error.message);
+    // Allow downstream handling to return a consistent error
+  }
+
   if (!billData) {
     throw new AppError('Bill not found', 'NOT_FOUND', 404, { billId: id });
   }
-  
+
   // Create Bill instance for additional methods
   try {
     const bill = new Bill(billData);
@@ -109,7 +175,7 @@ router.get('/:id', cacheMiddleware.middleware(900), asyncHandler(async (req, res
       statusColor: bill.getStatusColor(),
       previewSummary: bill.getPreviewSummary()
     };
-    
+
     res.json({
       success: true,
       data: response,
@@ -125,6 +191,32 @@ router.get('/:id', cacheMiddleware.middleware(900), asyncHandler(async (req, res
       timestamp: new Date().toISOString()
     });
   }
+}));
+
+// Debug endpoint (development): show candidates attempted for lookup
+router.get('/debug/lookup/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (!id) return res.status(400).json({ success: false, error: 'id required' });
+
+  const candidates = [];
+  const decoded = decodeURIComponent(id);
+  candidates.push(id, decoded, id.toUpperCase(), id.toLowerCase(), id.replace(/\s+/g, ''), id.replace(/\s+/g, '').toUpperCase());
+  candidates.push(id.replace(/([A-Za-z]+)(\d+)/, '$1 $2'), id.replace(/([A-Za-z]+)\s*(\d+)/, '$1$2'));
+
+  const { crudOperations } = require('../../config/crud-operations');
+  const results = [];
+  for (const c of Array.from(new Set(candidates))) {
+    try {
+      const doc = await crudOperations.read('bills', c).catch(() => null);
+      if (doc) results.push({ candidate: c, found: true, docId: doc.id });
+      else results.push({ candidate: c, found: false });
+    } catch (e) {
+      results.push({ candidate: c, found: false, error: e.message });
+    }
+  }
+
+  const matched = results.find(r => r.found) || null;
+  res.json({ success: true, id, candidates: results, matched });
 }));
 
 /**

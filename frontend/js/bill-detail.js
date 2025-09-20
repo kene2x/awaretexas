@@ -35,6 +35,8 @@ class BillDetailApp {
         }
     }
 
+
+
     async loadBillDetails() {
         if (!this.billId) {
             return;
@@ -88,20 +90,46 @@ class BillDetailApp {
             
             // Handle both new API format and legacy format
             this.bill = data.data || data.bill || data;
-            
+
             if (!this.bill) {
                 throw new Error('Invalid bill data received from server.');
+            }
+
+            // Defensive normalization: ensure we have a stable id and arrays where expected
+            try {
+                // Ensure id exists: prefer existing id, else normalize billNumber
+                if (!this.bill.id) {
+                    if (this.bill.billNumber) {
+                        this.bill.id = String(this.bill.billNumber).replace(/\s+/g, '').toUpperCase();
+                    } else if (this.bill.billNumber === undefined && this.bill.id === undefined) {
+                        // last resort: use shortTitle hash
+                        this.bill.id = ('bill-' + Math.abs(hashCode(this.bill.shortTitle || this.bill.fullTitle || 'unknown'))).toUpperCase();
+                    }
+                }
+
+                // Ensure sponsors, topics, coSponsors are arrays
+                if (!Array.isArray(this.bill.sponsors)) this.bill.sponsors = this.bill.sponsors ? [this.bill.sponsors] : [];
+                if (!Array.isArray(this.bill.topics)) this.bill.topics = this.bill.topics ? [this.bill.topics] : [];
+                if (!Array.isArray(this.bill.coSponsors)) this.bill.coSponsors = this.bill.coSponsors ? this.bill.coSponsors : [];
+            } catch (normalizeError) {
+                console.warn('Warning: failed to normalize bill data', normalizeError);
             }
             
             // Update page title
             document.title = `${this.bill.billNumber} - Texas Senate Bill Tracker`;
             
-            // Render all components
-            this.renderBillHeader();
-            this.renderSponsorInfo();
-            this.renderSummarySection();
-            this.renderNewsSection();
-            this.renderOfficialLink();
+            // Render all components (wrapped to surface errors)
+            try {
+                this.renderBillHeader();
+                this.renderSponsorInfo();
+                this.renderSummarySection();
+                this.renderNewsSection();
+                this.renderOfficialLink();
+            } catch (renderError) {
+                console.error('Error rendering bill detail components:', renderError);
+                this.showError('Failed to render bill details. Check console for details.');
+                return;
+            }
             
             this.hideLoading();
         }, this);
@@ -916,6 +944,18 @@ View Details: ${window.location.href}`;
         this.errorState.classList.remove('hidden');
         this.errorMessage.textContent = message;
     }
+}
+
+// Small deterministic hash for fallback id generation
+function hashCode(str) {
+    let hash = 0;
+    if (!str) return hash;
+    for (let i = 0; i < str.length; i++) {
+        const chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
 }
 
 // Initialize the application when the DOM is loaded and dependencies are ready
