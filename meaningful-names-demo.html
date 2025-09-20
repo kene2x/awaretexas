@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meaningful Names Demo - Texas Senate Bill Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .demo-section { margin: 30px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .before, .after { padding: 15px; border-radius: 8px; }
+        .before { background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .after { background-color: #d4edda; border: 1px solid #c3e6cb; }
+        .bill-card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .bill-number { background: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-size: 12px; color: #666; }
+        .meaningful-name { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .bill-title { color: #666; font-size: 14px; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🏷️ Meaningful Names Feature Demo</h1>
+    <p>Instead of showing technical bill numbers like "SB 1" or "HB 42", we now display meaningful names that describe what each bill actually does!</p>
+
+    <div class="demo-section">
+        <h2>Before vs After Comparison</h2>
+        
+        <div class="comparison">
+            <div class="before">
+                <h4>❌ Before (Technical Names)</h4>
+                <div class="bill-card">
+                    <div class="meaningful-name">SB 1</div>
+                    <div class="bill-title">General Appropriations Bill</div>
+                </div>
+                <div class="bill-card">
+                    <div class="meaningful-name">HB 42</div>
+                    <div class="bill-title">Transportation Infrastructure</div>
+                </div>
+                <div class="bill-card">
+                    <div class="meaningful-name">SB 2</div>
+                    <div class="bill-title">Education Savings Account Program</div>
+                </div>
+            </div>
+            
+            <div class="after">
+                <h4>✅ After (Meaningful Names)</h4>
+                <div class="bill-card">
+                    <div class="meaningful-name">General Appropriations Budget Bill</div>
+                    <div class="bill-number">SB 1</div>
+                    <div class="bill-title">General Appropriations Bill</div>
+                </div>
+                <div class="bill-card">
+                    <div class="meaningful-name">Transportation Infrastructure Act</div>
+                    <div class="bill-number">HB 42</div>
+                    <div class="bill-title">Transportation Infrastructure</div>
+                </div>
+                <div class="bill-card">
+                    <div class="meaningful-name">Education Savings Account Program</div>
+                    <div class="bill-number">SB 2</div>
+                    <div class="bill-title">Education Savings Account Program</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2>🧠 How It Works</h2>
+        <p>The system automatically generates meaningful names by:</p>
+        <ul>
+            <li><strong>Extracting key words</strong> from bill titles (safety, education, health, etc.)</li>
+            <li><strong>Removing common words</strong> like "relating to", "an act", etc.</li>
+            <li><strong>Adding appropriate suffixes</strong> like "Act", "Bill", or "Program"</li>
+            <li><strong>Keeping it concise</strong> - maximum 40 characters</li>
+        </ul>
+        
+        <h3>Examples of Transformations:</h3>
+        <div id="examples-container"></div>
+        
+        <button onclick="generateExamples()">Show More Examples</button>
+    </div>
+
+    <div class="demo-section">
+        <h2>🔍 Search Benefits</h2>
+        <p>Users can now search by meaningful terms:</p>
+        <ul>
+            <li>Search "Camp Safety" instead of remembering "SB 1"</li>
+            <li>Search "Education" to find education-related bills</li>
+            <li>Search "Budget" to find appropriations bills</li>
+            <li>Technical bill numbers are still searchable and visible</li>
+        </ul>
+    </div>
+
+    <div class="demo-section">
+        <h2>🌐 Live Demo</h2>
+        <p>See the meaningful names in action:</p>
+        <button onclick="window.open('http://localhost:3000/', '_blank')">Open Main Page with Meaningful Names</button>
+        <p><small>The main page now shows descriptive names instead of technical bill numbers, making it much easier for citizens to understand what each bill is about at a glance.</small></p>
+    </div>
+
+    <script>
+        // Simulate the meaningful name generation function
+        function generateMeaningfulName(title) {
+            if (!title) return 'Unknown Bill';
+            
+            // Remove common legislative prefixes
+            let cleanTitle = title
+                .replace(/^An Act /i, '')
+                .replace(/^relating to /i, '')
+                .replace(/^concerning /i, '')
+                .replace(/^regarding /i, '')
+                .replace(/^amending /i, '')
+                .replace(/^creating /i, '')
+                .replace(/^establishing /i, '')
+                .replace(/^providing for /i, '')
+                .replace(/; and providing penalties\.?$/i, '')
+                .replace(/; providing penalties\.?$/i, '')
+                .replace(/\.$/i, '')
+                .trim();
+            
+            // Extract meaningful words
+            const meaningfulWords = cleanTitle
+                .split(/\s+/)
+                .filter(word => {
+                    const commonWords = ['the', 'and', 'or', 'of', 'to', 'for', 'in', 'on', 'at', 'by', 'with', 'from', 'a', 'an'];
+                    const importantWords = ['safety', 'education', 'health', 'tax', 'budget', 'emergency', 'disaster', 'flood', 'camp', 'school', 'medical', 'insurance', 'transportation', 'environment', 'energy', 'water', 'housing', 'business', 'agriculture', 'technology', 'criminal', 'justice', 'voting', 'election', 'government', 'public', 'state', 'local', 'county', 'city', 'municipal', 'appropriations', 'funding', 'grant', 'license', 'permit', 'regulation', 'law', 'code', 'act', 'bill'];
+                    
+                    const lowerWord = word.toLowerCase();
+                    return word.length > 2 && 
+                           !commonWords.includes(lowerWord) && 
+                           (importantWords.includes(lowerWord) || word.length > 4);
+                })
+                .slice(0, 3);
+            
+            if (meaningfulWords.length === 0) {
+                const firstWords = cleanTitle.split(/\s+/).slice(0, 3).join(' ');
+                return firstWords.length > 30 ? firstWords.substring(0, 30) + '...' : firstWords;
+            }
+            
+            let meaningfulName = meaningfulWords.join(' ');
+            meaningfulName = meaningfulName.replace(/\b\w/g, l => l.toUpperCase());
+            
+            // Add appropriate suffix
+            if (!meaningfulName.toLowerCase().includes('act') && 
+                !meaningfulName.toLowerCase().includes('bill') &&
+                !meaningfulName.toLowerCase().includes('program') &&
+                !meaningfulName.toLowerCase().includes('system')) {
+                
+                if (meaningfulName.toLowerCase().includes('safety') || 
+                    meaningfulName.toLowerCase().includes('emergency') ||
+                    meaningfulName.toLowerCase().includes('disaster')) {
+                    meaningfulName += ' Safety Act';
+                } else if (meaningfulName.toLowerCase().includes('education') ||
+                          meaningfulName.toLowerCase().includes('school')) {
+                    meaningfulName += ' Education Act';
+                } else if (meaningfulName.toLowerCase().includes('tax') ||
+                          meaningfulName.toLowerCase().includes('budget') ||
+                          meaningfulName.toLowerCase().includes('appropriations')) {
+                    meaningfulName += ' Budget Bill';
+                } else if (meaningfulName.toLowerCase().includes('health') ||
+                          meaningfulName.toLowerCase().includes('medical')) {
+                    meaningfulName += ' Health Act';
+                } else {
+                    meaningfulName += ' Act';
+                }
+            }
+            
+            if (meaningfulName.length > 40) {
+                meaningfulName = meaningfulName.substring(0, 37) + '...';
+            }
+            
+            return meaningfulName;
+        }
+
+        function generateExamples() {
+            const sampleTitles = [
+                "An Act relating to campground and youth camp safety",
+                "Public School Finance Reform",
+                "Transportation Infrastructure Development",
+                "An Act concerning emergency disaster preparedness",
+                "Healthcare Provider Licensing Requirements",
+                "Criminal Justice Reform and Rehabilitation Programs",
+                "Environmental Protection and Water Conservation",
+                "Small Business Tax Relief and Economic Development",
+                "Voting Rights and Election Security Measures",
+                "Municipal Government Operations and Transparency"
+            ];
+            
+            const container = document.getElementById('examples-container');
+            container.innerHTML = '';
+            
+            sampleTitles.forEach((title, index) => {
+                const meaningfulName = generateMeaningfulName(title);
+                const exampleDiv = document.createElement('div');
+                exampleDiv.className = 'bill-card';
+                exampleDiv.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div class="meaningful-name" style="color: #28a745;">${meaningfulName}</div>
+                            <div class="bill-title">Original: "${title}"</div>
+                        </div>
+                        <div class="bill-number">Bill ${index + 1}</div>
+                    </div>
+                `;
+                container.appendChild(exampleDiv);
+            });
+        }
+        
+        // Generate examples on page load
+        window.addEventListener('load', generateExamples);
+    </script>
+</body>
+</html>

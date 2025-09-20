@@ -371,6 +371,19 @@ class BillTracker {
     }
 
     populateFilterOptions() {
+        // Populate topics dropdown from actual bill data
+        const topics = [...new Set(this.bills.flatMap(bill => 
+            bill.topics && Array.isArray(bill.topics) ? bill.topics : []
+        ))].sort();
+        
+        this.topicsFilter.innerHTML = '<option value="">All Topics</option>';
+        topics.forEach(topic => {
+            const option = document.createElement('option');
+            option.value = topic;
+            option.textContent = topic;
+            this.topicsFilter.appendChild(option);
+        });
+        
         // Populate sponsors dropdown
         const sponsors = [...new Set(this.bills.flatMap(bill => 
             bill.sponsors ? bill.sponsors.map(sponsor => sponsor.name || sponsor) : []
@@ -416,6 +429,7 @@ class BillTracker {
                     bill.shortTitle || '',
                     bill.fullTitle || '',
                     bill.abstract || '',
+                    this.generateMeaningfulName(bill), // Include meaningful name in search
                     // Include sponsor names in search
                     ...(bill.sponsors ? bill.sponsors.map(s => s.name || s) : [])
                 ].join(' ').toLowerCase();
@@ -615,6 +629,95 @@ class BillTracker {
         this.billGridElement.appendChild(fragment);
     }
 
+    /**
+     * Generate a meaningful name from bill title
+     * @param {Object} bill - Bill object
+     * @returns {string} Meaningful name
+     */
+    generateMeaningfulName(bill) {
+        const title = bill.shortTitle || bill.fullTitle || '';
+        
+        // If no title, fall back to bill number
+        if (!title) {
+            return bill.billNumber || 'Unknown Bill';
+        }
+        
+        // Remove common legislative prefixes and suffixes
+        let cleanTitle = title
+            .replace(/^An Act /i, '')
+            .replace(/^relating to /i, '')
+            .replace(/^concerning /i, '')
+            .replace(/^regarding /i, '')
+            .replace(/^amending /i, '')
+            .replace(/^creating /i, '')
+            .replace(/^establishing /i, '')
+            .replace(/^providing for /i, '')
+            .replace(/; and providing penalties\.?$/i, '')
+            .replace(/; providing penalties\.?$/i, '')
+            .replace(/\.$/i, '')
+            .trim();
+        
+        // Extract key meaningful words and create a short name
+        const meaningfulWords = cleanTitle
+            .split(/\s+/)
+            .filter(word => {
+                // Filter out common words but keep important ones
+                const commonWords = ['the', 'and', 'or', 'of', 'to', 'for', 'in', 'on', 'at', 'by', 'with', 'from', 'a', 'an'];
+                const importantWords = ['safety', 'education', 'health', 'tax', 'budget', 'emergency', 'disaster', 'flood', 'camp', 'school', 'medical', 'insurance', 'transportation', 'environment', 'energy', 'water', 'housing', 'business', 'agriculture', 'technology', 'criminal', 'justice', 'voting', 'election', 'government', 'public', 'state', 'local', 'county', 'city', 'municipal', 'appropriations', 'funding', 'grant', 'license', 'permit', 'regulation', 'law', 'code', 'act', 'bill'];
+                
+                const lowerWord = word.toLowerCase();
+                return word.length > 2 && 
+                       !commonWords.includes(lowerWord) && 
+                       (importantWords.includes(lowerWord) || word.length > 4);
+            })
+            .slice(0, 3); // Take first 3 meaningful words
+        
+        if (meaningfulWords.length === 0) {
+            // If no meaningful words found, use first few words of title
+            const firstWords = cleanTitle.split(/\s+/).slice(0, 3).join(' ');
+            return firstWords.length > 30 ? firstWords.substring(0, 30) + '...' : firstWords;
+        }
+        
+        // Create meaningful name
+        let meaningfulName = meaningfulWords.join(' ');
+        
+        // Capitalize first letter of each word
+        meaningfulName = meaningfulName.replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Add "Act" or "Bill" suffix if it makes sense
+        if (!meaningfulName.toLowerCase().includes('act') && 
+            !meaningfulName.toLowerCase().includes('bill') &&
+            !meaningfulName.toLowerCase().includes('program') &&
+            !meaningfulName.toLowerCase().includes('system')) {
+            
+            // Determine appropriate suffix based on content
+            if (meaningfulName.toLowerCase().includes('safety') || 
+                meaningfulName.toLowerCase().includes('emergency') ||
+                meaningfulName.toLowerCase().includes('disaster')) {
+                meaningfulName += ' Safety Act';
+            } else if (meaningfulName.toLowerCase().includes('education') ||
+                      meaningfulName.toLowerCase().includes('school')) {
+                meaningfulName += ' Education Act';
+            } else if (meaningfulName.toLowerCase().includes('tax') ||
+                      meaningfulName.toLowerCase().includes('budget') ||
+                      meaningfulName.toLowerCase().includes('appropriations')) {
+                meaningfulName += ' Budget Bill';
+            } else if (meaningfulName.toLowerCase().includes('health') ||
+                      meaningfulName.toLowerCase().includes('medical')) {
+                meaningfulName += ' Health Act';
+            } else {
+                meaningfulName += ' Act';
+            }
+        }
+        
+        // Ensure it's not too long
+        if (meaningfulName.length > 40) {
+            meaningfulName = meaningfulName.substring(0, 37) + '...';
+        }
+        
+        return meaningfulName;
+    }
+
     createBillCard(bill) {
         const card = document.createElement('div');
         card.className = 'bill-card-component bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer animate-fade-in';
@@ -636,13 +739,19 @@ class BillTracker {
         const primarySponsor = bill.sponsors && bill.sponsors.length > 0 ? 
             (bill.sponsors[0].name || bill.sponsors[0]) : 'Unknown';
 
+        // Generate meaningful name from bill title
+        const meaningfulName = this.generateMeaningfulName(bill);
+
         card.innerHTML = `
             <div class="flex items-start justify-between mb-3 sm:mb-4">
                 <div class="flex-1">
-                    <h3 class="heading-secondary text-base sm:text-lg mb-2">${bill.billNumber}</h3>
-                    <span class="status-badge ${statusColor}">
-                        ${bill.status === 'Filed' ? '📄' : bill.status === 'In Committee' ? '🏛️' : bill.status === 'Passed' ? '✅' : '📋'} ${bill.status}
-                    </span>
+                    <h3 class="heading-secondary text-base sm:text-lg mb-2">${meaningfulName}</h3>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">${bill.billNumber}</span>
+                        <span class="status-badge ${statusColor}">
+                            ${bill.status === 'Filed' ? '📄' : bill.status === 'In Committee' ? '🏛️' : bill.status === 'Passed' ? '✅' : '📋'} ${bill.status}
+                        </span>
+                    </div>
                 </div>
             </div>
             
