@@ -18,16 +18,19 @@ class TexasLegislatureScraper {
   constructor() {
     this.baseUrl = 'https://capitol.texas.gov';
     this.billsListUrl = 'https://capitol.texas.gov/BillLookup/BillNumber.aspx';
+    // Use the Senate filed bills report - much more efficient!
+    this.senateReportUrl = 'https://capitol.texas.gov/Reports/Report.aspx?LegSess=89R&ID=senatefiled';
     this.axiosConfig = {
       timeout: 30000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     };
   }
 
   /**
-   * Scrape all current Senate bills from TLO with comprehensive error handling
+   * Scrape all current Senate bills from TLO Senate Filed Bills report
+   * Much more efficient than individual bill searches!
    * @returns {Promise<Array>} Array of bill objects
    */
   async scrapeBills() {
@@ -36,72 +39,66 @@ class TexasLegislatureScraper {
     try {
       return await circuitBreakers.scraper.execute(async () => {
         return await retryManager.executeWithRetry(async () => {
-          console.log('Starting to scrape Texas Senate bills...');
+          console.log('Starting to scrape Texas Senate bills from reports...');
           
           if (!cheerio) {
             throw new AppError('Cheerio not available in test environment', 'SCRAPING_ERROR');
           }
           
-          // Get the current session bills list page with timeout
+          // Get the Senate filed bills report page
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout for large report
           
           try {
-            const response = await axios.get(this.billsListUrl, {
+            const response = await axios.get(this.senateReportUrl, {
               ...this.axiosConfig,
               signal: controller.signal
             });
             clearTimeout(timeoutId);
             
-            if (!response.data || response.data.length < 100) {
-              throw new AppError('Invalid or empty response from Texas Legislature website', 'SCRAPING_ERROR');
+            if (!response.data || response.data.length < 1000) {
+              throw new AppError('Invalid or empty response from Senate reports page', 'SCRAPING_ERROR');
             }
             
             const $ = cheerio.load(response.data);
             const bills = [];
             
-            // Look for Senate bills (SB prefix) in the bills table
-            $('table tr').each((index, element) => {
+            console.log('Parsing Senate bills from report...');
+            
+            // Each bill has its own table structure
+            // Look for tables that contain bill numbers (SB pattern)
+            $('table').each((tableIndex, table) => {
               try {
-                const $row = $(element);
-                const billNumber = $row.find('td:first-child a').text().trim();
+                const $table = $(table);
+                const tableText = $table.text();
                 
-                // Only process Senate bills (SB prefix)
-                if (billNumber.startsWith('SB')) {
-                  const billUrl = $row.find('td:first-child a').attr('href');
-                  const title = $row.find('td:nth-child(2)').text().trim();
-                  const author = $row.find('td:nth-child(3)').text().trim();
-                  const status = $row.find('td:nth-child(4)').text().trim();
+                // Check if this table contains a Senate bill
+                const billMatch = tableText.match(/SB\s*(\d+)/i);
+                if (billMatch) {
+                  const billNumber = `SB ${billMatch[1]}`;
                   
-                  if (billNumber && title) {
-                    bills.push({
-                      billNumber,
-                      shortTitle: this.extractShortTitle(title),
-                      fullTitle: title,
-                      status: this.normalizeStatus(status),
-                      sponsors: author ? [{ name: author, photoUrl: '', district: '' }] : [],
-                      officialUrl: billUrl ? `${this.baseUrl}${billUrl}` : '',
-                      billText: '',
-                      abstract: '',
-                      committee: '',
-                      coSponsors: [],
-                      filedDate: null,
-                      lastUpdated: new Date(),
-                      topics: []
-                    });
+                  // Extract bill information from the table structure
+                  const billData = this.parseBillTable($table, billNumber);
+                  
+                  if (billData && this.validateBillData(billData)) {
+                    bills.push(billData);
+                    
+                    if (bills.length % 100 === 0) {
+                      console.log(`Processed ${bills.length} bills...`);
+                    }
                   }
                 }
-              } catch (rowError) {
-                console.warn(`Error processing bill row ${index}:`, rowError.message);
-                // Continue processing other rows
+              } catch (tableError) {
+                console.warn(`Error processing table ${tableIndex}:`, tableError.message);
+                // Continue processing other tables
               }
             });
             
             if (bills.length === 0) {
-              throw new AppError('No Senate bills found on the page', 'SCRAPING_ERROR');
+              throw new AppError('No Senate bills found in the report', 'SCRAPING_ERROR');
             }
             
-            console.log(`Successfully scraped ${bills.length} Senate bills`);
+            console.log(`Successfully scraped ${bills.length} Senate bills from report`);
             
             // Store successful result as fallback
             fallbackManager.setFallback('bills-list', bills);
@@ -112,7 +109,7 @@ class TexasLegislatureScraper {
             clearTimeout(timeoutId);
             
             if (axiosError.name === 'AbortError') {
-              throw new AppError('Request timeout while scraping bills', 'TIMEOUT');
+              throw new AppError('Request timeout while scraping Senate report', 'TIMEOUT');
             } else if (axiosError.code === 'ENOTFOUND' || axiosError.code === 'ECONNREFUSED') {
               throw new AppError('Cannot connect to Texas Legislature website', 'NETWORK_ERROR');
             } else {
@@ -149,6 +146,144 @@ class TexasLegislatureScraper {
       return fallbackManager.generateFallbackBills();
     }
   }
+
+  /**
+   * Parse bill information from a table element
+   * @param {Object} $table - Cheerio table element
+   * @param {string} billNumber - Bill number (e.g., "SB 1")
+   * @returns {Object|null} Bill data object or null if parsing fails
+   */
+  parseBillTable($table, billNumber) {
+    try {
+      const tableText = $table.text();
+      
+      // Extract author information from the header row
+      const headerRow = $table.find('tr').first();
+      const headerText = headerRow.text();
+      
+      // Authors are typically after "Author:" in the header
+      const authorMatch = headerText.match(/Author:\s*([^|]+)/i);
+      const authors = authorMatch ? authorMatch[1].trim().split(/\s+/) : [];
+      
+      // Extract sponsor information
+      const sponsorMatch = tableText.match(/Sponsor:\s*([^|]+)/i);
+      const sponsors = sponsorMatch ? sponsorMatch[1].trim().split(/\s+/) : [];
+      
+      // Extract last action/status
+      const actionMatch = tableText.match(/Last Action:\s*([^|]+)/i);
+      const lastAction = actionMatch ? actionMatch[1].trim() : '';
+      
+      // Extract caption (bill title)
+      const captionMatch = tableText.match(/Caption:\s*(.+?)(?:\n|$)/i);
+      const caption = captionMatch ? captionMatch[1].trim() : '';
+      
+      // Extract status from last action
+      const status = this.extractStatusFromAction(lastAction);
+      
+      // Build sponsors array
+      const sponsorsList = [];
+      if (authors.length > 0) {
+        sponsorsList.push({ name: authors[0], photoUrl: '', district: '' });
+      }
+      
+      return {
+        billNumber: billNumber.replace(/\s+/g, ' '), // Normalize spacing
+        shortTitle: this.extractShortTitle(caption),
+        fullTitle: caption || `${billNumber} - Title not available`,
+        status: status,
+        sponsors: sponsorsList,
+        officialUrl: '', // We'll need to construct this separately if needed
+        billText: '',
+        abstract: caption || '',
+        committee: '',
+        coSponsors: sponsors.slice(0, 5).map(name => name.trim()).filter(name => name.length > 0),
+        filedDate: this.extractDateFromAction(lastAction),
+        lastUpdated: new Date(),
+        topics: this.extractTopicsFromTitle(caption)
+      };
+      
+    } catch (error) {
+      console.warn(`Error parsing bill table for ${billNumber}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Extract status from last action text
+   * @param {string} actionText - Last action text
+   * @returns {string} Normalized status
+   */
+  extractStatusFromAction(actionText) {
+    if (!actionText) return 'Filed';
+    
+    const actionLower = actionText.toLowerCase();
+    
+    if (actionLower.includes('effective') || actionLower.includes('enacted')) {
+      return 'Passed';
+    } else if (actionLower.includes('signed')) {
+      return 'Signed';
+    } else if (actionLower.includes('vetoed')) {
+      return 'Vetoed';
+    } else if (actionLower.includes('committee') || actionLower.includes('referred')) {
+      return 'In Committee';
+    } else if (actionLower.includes('passed') || actionLower.includes('engrossed')) {
+      return 'Passed';
+    } else if (actionLower.includes('filed') || actionLower.includes('introduced')) {
+      return 'Filed';
+    }
+    
+    return 'Filed'; // Default status
+  }
+
+  /**
+   * Extract date from action text
+   * @param {string} actionText - Action text containing date
+   * @returns {Date|null} Extracted date or null
+   */
+  extractDateFromAction(actionText) {
+    if (!actionText) return null;
+    
+    // Look for date patterns like MM/DD/YYYY
+    const dateMatch = actionText.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+    if (dateMatch) {
+      return new Date(dateMatch[1]);
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract topics from bill title
+   * @param {string} title - Bill title
+   * @returns {Array} Array of topic strings
+   */
+  extractTopicsFromTitle(title) {
+    if (!title) return [];
+    
+    const topics = [];
+    const titleLower = title.toLowerCase();
+    
+    // Common topic keywords
+    const topicKeywords = {
+      'Education': ['education', 'school', 'student', 'teacher', 'university', 'college'],
+      'Healthcare': ['health', 'medical', 'hospital', 'medicare', 'medicaid', 'insurance'],
+      'Transportation': ['transportation', 'highway', 'road', 'traffic', 'vehicle', 'motor'],
+      'Environment': ['environment', 'water', 'air', 'pollution', 'conservation', 'energy'],
+      'Criminal Justice': ['criminal', 'crime', 'police', 'court', 'prison', 'justice'],
+      'Business': ['business', 'commerce', 'economic', 'tax', 'finance', 'employment'],
+      'Government': ['government', 'public', 'administration', 'agency', 'department']
+    };
+    
+    for (const [topic, keywords] of Object.entries(topicKeywords)) {
+      if (keywords.some(keyword => titleLower.includes(keyword))) {
+        topics.push(topic);
+      }
+    }
+    
+    return topics.length > 0 ? topics : ['General'];
+  }
+
+
 
   /**
    * Get detailed information for a specific bill

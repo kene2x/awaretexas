@@ -90,13 +90,16 @@ class CrudOperations {
     try {
       await this.initialize();
       const snapshot = await this.db.collection(collection)
-        .where('_isStructureDoc', '!=', true)
         .limit(limit)
         .get();
       
       const documents = [];
       snapshot.forEach(doc => {
-        documents.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        // Filter out structure documents in code rather than query
+        if (!data._isStructureDoc) {
+          documents.push({ id: doc.id, ...data });
+        }
       });
       
       return documents;

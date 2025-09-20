@@ -48,22 +48,29 @@ class BillDetailApp {
                 this.showLoading();
             }
             
-            // Use enhanced fetch with retry logic
-            const response = await window.enhancedFetch.fetch(`/api/bills/${this.billId}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            }, {
-                maxRetries: 3,
-                retryCondition: (error, response) => {
-                    return !response || 
-                           response.status >= 500 || 
-                           response.status === 429 ||
-                           error?.name === 'TypeError' ||
-                           error?.message?.includes('network');
-                }
-            });
+            // Use enhanced fetch with retry logic, fallback to regular fetch
+            const response = window.enhancedFetch ? 
+                await window.enhancedFetch.fetch(`/api/bills/${this.billId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                }, {
+                    maxRetries: 3,
+                    retryCondition: (error, response) => {
+                        return !response || 
+                               response.status >= 500 || 
+                               response.status === 429 ||
+                               error?.name === 'TypeError' ||
+                               error?.message?.includes('network');
+                    }
+                }) :
+                await fetch(`/api/bills/${this.billId}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
             
             if (!response.ok) {
                 if (response.status === 404) {
@@ -911,14 +918,24 @@ View Details: ${window.location.href}`;
     }
 }
 
-// Initialize the application when the DOM is loaded
+// Initialize the application when the DOM is loaded and dependencies are ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize with performance monitoring
-    if (window.performanceMonitor) {
-        window.performanceMonitor.measureRender('bill-detail-init', () => {
-            window.billDetailApp = new BillDetailApp();
-        });
-    } else {
-        window.billDetailApp = new BillDetailApp();
-    }
+    // Wait for all dependencies to be ready
+    const initializeApp = () => {
+        if (window.enhancedFetch && window.errorBoundary) {
+            // Initialize with performance monitoring
+            if (window.performanceMonitor) {
+                window.performanceMonitor.measureRender('bill-detail-init', () => {
+                    window.billDetailApp = new BillDetailApp();
+                });
+            } else {
+                window.billDetailApp = new BillDetailApp();
+            }
+        } else {
+            // Dependencies not ready, wait a bit and try again
+            setTimeout(initializeApp, 100);
+        }
+    };
+    
+    initializeApp();
 });

@@ -100,7 +100,7 @@ class BillDatabase {
   // Validate bill data structure
   validateBillData(billData) {
     const requiredFields = ['billNumber', 'shortTitle', 'status'];
-    const validStatuses = ['Filed', 'In Committee', 'Passed'];
+    const validStatuses = ['Filed', 'In Committee', 'Passed', 'Signed', 'Vetoed', 'Effective'];
 
     for (const field of requiredFields) {
       if (!billData[field]) {

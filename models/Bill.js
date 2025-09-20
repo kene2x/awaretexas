@@ -57,7 +57,7 @@ class Bill {
    */
   validateRequiredFields(data) {
     const requiredFields = ['id', 'billNumber', 'shortTitle', 'fullTitle', 'status'];
-    const validStatuses = ['Filed', 'In Committee', 'Passed'];
+    const validStatuses = ['Filed', 'In Committee', 'Passed', 'Signed', 'Vetoed', 'Effective'];
 
     for (const field of requiredFields) {
       if (!data[field] || typeof data[field] !== 'string' || data[field].trim() === '') {
