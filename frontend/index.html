@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Texas Senate Bill Tracker</title>
     <link href="styles/output.css" rel="stylesheet">
 </head>
+
 <body class="bg-gray-50">
     <!-- Skip to main content link for keyboard accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
-    
+
     <div id="app">
         <!-- Navigation Header with AWARE TEXAS Branding -->
         <header class="navigation-header">
@@ -18,24 +20,23 @@
                     <span class="texas-flag-icon"></span>
                     <span class="brand-text">AWARE TEXAS</span>
                 </div>
-                
+
                 <!-- Desktop Navigation -->
                 <nav class="nav-links">
                     <a href="#" class="nav-link">Home</a>
                     <a href="#" class="nav-link">About Us</a>
                 </nav>
-                
+
                 <!-- Mobile Navigation Button -->
-                <button class="mobile-nav-button" id="mobile-nav-toggle" 
-                        aria-label="Toggle navigation menu" 
-                        aria-expanded="false" 
-                        aria-controls="mobile-nav-menu">
+                <button class="mobile-nav-button" id="mobile-nav-toggle" aria-label="Toggle navigation menu"
+                    aria-expanded="false" aria-controls="mobile-nav-menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Mobile Navigation Menu -->
             <div class="mobile-nav-menu hidden" id="mobile-nav-menu" aria-hidden="true">
                 <nav class="mobile-nav-links" role="navigation" aria-label="Mobile navigation">
@@ -49,150 +50,140 @@
         <section class="hero-section" role="banner" aria-labelledby="hero-image">
             <div class="hero-content hero-smooth-load">
                 <div class="hero-branding hero-brand-load">
-                    <img 
-                        id="hero-image"
-                        src="header.png" 
-                        alt="AWARE TEXAS - Creating a More Informed Texas" 
-                        class="hero-header-image"
-                        role="img"
-                    />
+                    <img id="hero-image" src="landing.svg" alt="AWARE TEXAS - Creating a More Informed Texas"
+                        class="hero-header-image" role="img" />
                 </div>
             </div>
         </section>
 
         <!-- Dark Blue Search Section -->
-        <section class="search-section section-animate-in" role="search" aria-labelledby="search-heading" aria-describedby="search-description">
+        <section class="search-section section-animate-in" role="search" aria-labelledby="search-heading"
+            aria-describedby="search-description">
             <div class="search-container">
                 <h2 id="search-heading" class="search-heading">SEARCH BILLS</h2>
-                <div id="search-description" class="sr-only">Search and filter Texas Senate bills by keyword, topic, sponsor, or status</div>
+                <div id="search-description" class="sr-only">Search and filter Texas Senate bills by keyword, topic,
+                    sponsor, or status</div>
                 <div class="search-content">
                     <!-- Enhanced Search and Filter Section -->
                     <div class="search-form-wrapper">
-                <!-- SearchBar Component with Live Filtering -->
-                <div class="search-bar-component">
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            id="search-input"
-                            placeholder="Search bills by keyword, title, or bill number..."
-                            class="input-modern w-full"
-                            aria-label="Search Texas Senate bills by keyword, title, or bill number"
-                            aria-describedby="search-help"
-                            autocomplete="off"
-                            role="searchbox"
-                            aria-expanded="false"
-                            aria-haspopup="false"
-                        >
-                        <div id="search-help" class="sr-only">Type to search bills. Results will update automatically as you type.</div>
-                        <div class="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                        </div>
-                        <!-- Live search indicator -->
-                        <div id="search-indicator" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
-                            <div class="loading-spinner-small"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FilterPanel Component with Multi-Select Dropdowns -->
-                <div class="filter-panel-component card-texas card-padding">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <div class="flex-1 min-w-0">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-                                <!-- Topics Multi-Select Filter -->
-                                <div class="relative">
-                                    <label for="topics-filter" class="block text-caption font-medium text-gray-700 mb-2">
-                                        Topics
-                                        <span class="text-xs text-gray-500">(Multi-select)</span>
-                                    </label>
-                                    <select 
-                                        id="topics-filter" 
-                                        multiple
-                                        class="filter-select text-responsive-sm h-20"
-                                        aria-label="Filter by bill topics - hold Ctrl or Cmd to select multiple topics"
-                                        aria-describedby="topics-help"
-                                        title="Hold Ctrl/Cmd to select multiple topics"
-                                        role="listbox"
-                                        aria-multiselectable="true"
-                                    >
-                                    <div id="topics-help" class="sr-only">Use Ctrl+click or Cmd+click to select multiple topics. Use arrow keys to navigate options.</div>
-                                        <option value="">All Topics</option>
-                                        <!-- Topic options will be populated dynamically from bill data -->
-                                    </select>
+                        <!-- SearchBar Component with Live Filtering -->
+                        <div class="search-bar-component">
+                            <div class="relative">
+                                <input type="text" id="search-input"
+                                    placeholder="Search bills by keyword, title, or bill number..."
+                                    class="input-modern w-full pl-10"
+                                    aria-label="Search Texas Senate bills by keyword, title, or bill number"
+                                    aria-describedby="search-help" autocomplete="off" role="searchbox"
+                                    aria-expanded="false" aria-haspopup="false">
+                                <div id="search-help" class="sr-only">Type to search bills. Results will update
+                                    automatically as you type.</div>
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
                                 </div>
-
-                                <!-- Sponsors Multi-Select Filter -->
-                                <div class="relative">
-                                    <label for="sponsors-filter" class="block text-caption font-medium text-gray-700 mb-2">
-                                        Sponsors
-                                        <span class="text-xs text-gray-500">(Multi-select)</span>
-                                    </label>
-                                    <select 
-                                        id="sponsors-filter" 
-                                        multiple
-                                        class="filter-select text-responsive-sm h-20"
-                                        aria-label="Filter by bill sponsors - hold Ctrl or Cmd to select multiple sponsors"
-                                        aria-describedby="sponsors-help"
-                                        title="Hold Ctrl/Cmd to select multiple sponsors"
-                                        role="listbox"
-                                        aria-multiselectable="true"
-                                    >
-                                    <div id="sponsors-help" class="sr-only">Use Ctrl+click or Cmd+click to select multiple sponsors. Use arrow keys to navigate options.</div>
-                                        <option value="">All Sponsors</option>
-                                        <!-- Sponsor options will be populated dynamically -->
-                                    </select>
-                                </div>
-
-                                <!-- Status Filter -->
-                                <div class="relative">
-                                    <label for="status-filter" class="block text-caption font-medium text-gray-700 mb-2">Status</label>
-                                    <select 
-                                        id="status-filter"
-                                        class="filter-select text-responsive-sm"
-                                        aria-label="Filter by bill status"
-                                        aria-describedby="status-help"
-                                        role="combobox"
-                                        aria-expanded="false"
-                                    >
-                                    <div id="status-help" class="sr-only">Select a bill status to filter results. Use arrow keys to navigate options.</div>
-                                        <option value="">All Statuses</option>
-                                        <option value="Filed">📄 Filed</option>
-                                        <option value="In Committee">🏛️ In Committee</option>
-                                        <option value="Passed">✅ Passed</option>
-                                    </select>
+                                <!-- Live search indicator -->
+                                <div id="search-indicator"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                                    <div class="loading-spinner-small"></div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Enhanced Clear Filters Button -->
-                        <div class="flex-shrink-0 w-full sm:w-auto">
-                            <button 
-                                id="clear-filters"
-                                class="btn-texas-primary w-full sm:w-auto"
-                                aria-label="Clear all search filters and reset to show all bills"
-                                aria-describedby="clear-help"
-                                type="button"
-                            >
-                            <div id="clear-help" class="sr-only">This button will clear all active filters and show all available bills</div>
-                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                                Clear Filters
-                            </button>
+
+                        <!-- FilterPanel Component with Multi-Select Dropdowns -->
+                        <div class="filter-panel-component card-texas card-padding">
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                                        <!-- Topics Multi-Select Filter -->
+                                        <div class="relative">
+                                            <label for="topics-filter"
+                                                class="block text-caption font-medium text-gray-700 mb-2">
+                                                Topics
+                                                <span class="text-xs text-gray-500">(Multi-select)</span>
+                                            </label>
+                                            <select id="topics-filter" multiple
+                                                class="filter-select text-responsive-sm h-20"
+                                                aria-label="Filter by bill topics - hold Ctrl or Cmd to select multiple topics"
+                                                aria-describedby="topics-help"
+                                                title="Hold Ctrl/Cmd to select multiple topics" role="listbox"
+                                                aria-multiselectable="true">
+                                                <div id="topics-help" class="sr-only">Use Ctrl+click or Cmd+click to
+                                                    select multiple topics. Use arrow keys to navigate options.</div>
+                                                <option value="">All Topics</option>
+                                                <!-- Topic options will be populated dynamically from bill data -->
+                                            </select>
+                                        </div>
+
+                                        <!-- Sponsors Multi-Select Filter -->
+                                        <div class="relative">
+                                            <label for="sponsors-filter"
+                                                class="block text-caption font-medium text-gray-700 mb-2">
+                                                Sponsors
+                                                <span class="text-xs text-gray-500">(Multi-select)</span>
+                                            </label>
+                                            <select id="sponsors-filter" multiple
+                                                class="filter-select text-responsive-sm h-20"
+                                                aria-label="Filter by bill sponsors - hold Ctrl or Cmd to select multiple sponsors"
+                                                aria-describedby="sponsors-help"
+                                                title="Hold Ctrl/Cmd to select multiple sponsors" role="listbox"
+                                                aria-multiselectable="true">
+                                                <div id="sponsors-help" class="sr-only">Use Ctrl+click or Cmd+click to
+                                                    select multiple sponsors. Use arrow keys to navigate options.</div>
+                                                <option value="">All Sponsors</option>
+                                                <!-- Sponsor options will be populated dynamically -->
+                                            </select>
+                                        </div>
+
+                                        <!-- Status Filter -->
+                                        <div class="relative">
+                                            <label for="status-filter"
+                                                class="block text-caption font-medium text-gray-700 mb-2">Status</label>
+                                            <select id="status-filter" class="filter-select text-responsive-sm"
+                                                aria-label="Filter by bill status" aria-describedby="status-help"
+                                                role="combobox" aria-expanded="false">
+                                                <div id="status-help" class="sr-only">Select a bill status to filter
+                                                    results. Use arrow keys to navigate options.</div>
+                                                <option value="">All Statuses</option>
+                                                <option value="Filed">📄 Filed</option>
+                                                <option value="In Committee">🏛️ In Committee</option>
+                                                <option value="Passed">✅ Passed</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Enhanced Clear Filters Button -->
+                                <div class="flex-shrink-0 w-full sm:w-auto">
+                                    <button id="clear-filters" class="btn-texas-primary w-full sm:w-auto"
+                                        aria-label="Clear all search filters and reset to show all bills"
+                                        aria-describedby="clear-help" type="button">
+                                        <div id="clear-help" class="sr-only">This button will clear all active filters
+                                            and show all available bills</div>
+                                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
         </section>
 
-        <main id="main-content" class="container-responsive py-responsive" role="main" aria-labelledby="main-content-label">
+        <main id="main-content" class="container-responsive py-responsive" role="main"
+            aria-labelledby="main-content-label">
             <h2 id="main-content-label" class="sr-only">Texas Senate Bills Search Results</h2>
-            
+
             <!-- Loading State with Texas Theme -->
-            <div id="loading" class="text-center py-12 section-animate-in" role="status" aria-live="polite" aria-label="Loading bills">
-                <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-texas-blue bg-white">
+            <div id="loading" class="text-center py-12 section-animate-in" role="status" aria-live="polite"
+                aria-label="Loading bills">
+                <div
+                    class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-texas-blue bg-white">
                     <div class="loading-spinner-texas -ml-1 mr-3" aria-hidden="true"></div>
                     Loading bills...
                 </div>
@@ -206,25 +197,37 @@
                 </p>
             </div>
 
-            <!-- Enhanced Responsive Bill Grid -->
-            <div id="bill-grid" class="bill-grid bill-grid-responsive hidden" role="region" aria-labelledby="bills-region-label" aria-live="polite">
+            <!-- Enhanced Responsive Bill List -->
+            <div id="bill-grid" class="space-y-3 hidden" role="region" aria-labelledby="bills-region-label"
+                aria-live="polite">
                 <h3 id="bills-region-label" class="sr-only">Search Results - Texas Senate Bills</h3>
-                <!-- Bill cards will be dynamically inserted here -->
+                <!-- Bill rows will be dynamically inserted here -->
             </div>
 
-            <!-- No Results State -->
-            <div id="no-results" class="text-center py-12 hidden" role="status" aria-live="polite">
-                <div class="max-w-md mx-auto">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No bills found</h3>
-                    <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
-                </div>
-            </div>
-        </main>
+            <!-- Show More Button -->
+            <div class="text-center mt-12 mb-8"></div>
+            <button id="show-more-button"
+                class="btn-texas-primary px-8 py-3 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                style="display: none;" aria-label="Load more bills">
+                Show More Bills
+            </button>
     </div>
-    
+
+    <!-- No Results State -->
+    <div id="no-results" class="text-center py-12 hidden" role="status" aria-live="polite">
+        <div class="max-w-md mx-auto">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No bills found</h3>
+            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
+        </div>
+    </div>
+    </main>
+    </div>
+
     <!-- Error handling and performance optimization scripts -->
     <script src="js/error-boundary.js"></script>
     <script src="js/cache-manager.js"></script>
@@ -234,4 +237,5 @@
     <script src="js/accessibility-checker.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>

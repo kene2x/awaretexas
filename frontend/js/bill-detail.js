@@ -41,7 +41,7 @@ class BillDetailApp {
         this.billHeaderElement = document.getElementById('bill-header');
         this.sponsorInfoElement = document.getElementById('sponsor-info');
         this.summarySectionElement = document.getElementById('summary-section');
-        this.newsSectionElement = document.getElementById('news-section');
+
         this.officialLinkElement = document.getElementById('official-link');
 
         // Debug: Check if all elements were found
@@ -53,7 +53,6 @@ class BillDetailApp {
             billHeader: this.billHeaderElement,
             sponsorInfo: this.sponsorInfoElement,
             summarySection: this.summarySectionElement,
-            newsSection: this.newsSectionElement,
             officialLink: this.officialLinkElement
         };
 
@@ -72,8 +71,11 @@ class BillDetailApp {
             this.billDetailContent.classList.add('hidden');
             if (this.errorState) {
                 this.errorState.classList.add('hidden');
+                // Force hide with inline style as backup
+                this.errorState.style.display = 'none';
+                console.log('🔧 Error state forcefully hidden');
             }
-            console.log('🎯 Initial state set: loading shown, content hidden');
+            console.log('🎯 Initial state set: loading shown, content hidden, error hidden');
         }
     }
 
@@ -209,14 +211,16 @@ class BillDetailApp {
                 console.log('  - Rendering summary section...');
                 this.renderSummarySection();
 
-                console.log('  - Rendering news section...');
-                this.renderNewsSection();
+
 
                 console.log('  - Rendering official link...');
                 this.renderOfficialLink();
 
                 console.log('  - Rendering voting chart...');
-                this.renderVotingChart();
+                // Add small delay to ensure DOM elements are created
+                setTimeout(() => {
+                    this.renderVotingChart();
+                }, 100);
 
                 console.log('✅ All components rendered successfully');
             } catch (renderError) {
@@ -233,6 +237,7 @@ class BillDetailApp {
             // Aggressive fix: directly manipulate DOM elements
             const loadingElement = document.getElementById('loading');
             const contentElement = document.getElementById('bill-detail-content');
+            const errorElement = document.getElementById('error-state');
             
             if (loadingElement) {
                 loadingElement.style.display = 'none';
@@ -244,6 +249,12 @@ class BillDetailApp {
                 contentElement.style.display = 'block';
                 contentElement.classList.remove('hidden');
                 console.log('🔧 Directly showed content element');
+            }
+            
+            if (errorElement) {
+                errorElement.style.display = 'none';
+                errorElement.classList.add('hidden');
+                console.log('🔧 Directly hid error element');
             }
             
             // Force hide loading as fallback
@@ -263,13 +274,21 @@ class BillDetailApp {
 
             console.log('✅ Bill details loaded successfully!');
         
-        // Final check to ensure loading is hidden
+        // Final check to ensure loading is hidden and error is hidden
         setTimeout(() => {
             const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error-state');
+            
             if (loadingEl && !loadingEl.classList.contains('hidden')) {
                 console.log('🚨 Loading still visible, forcing hide');
                 loadingEl.classList.add('hidden');
                 loadingEl.style.display = 'none';
+            }
+            
+            if (errorEl && !errorEl.classList.contains('hidden')) {
+                console.log('🚨 Error state still visible, forcing hide');
+                errorEl.classList.add('hidden');
+                errorEl.style.display = 'none';
             }
         }, 500);
 
@@ -683,214 +702,9 @@ class BillDetailApp {
         return await response.json();
     }
 
-    renderNewsSection() {
-        this.newsSectionElement.innerHTML = `
-            <div>
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Related News</h3>
-                    <button onclick="window.billDetailApp.loadNews()" class="text-sm text-texas-blue hover:text-texas-blue-700 transition-colors">
-                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Refresh
-                    </button>
-                </div>
-                
-                <!-- News Content -->
-                <div id="news-content">
-                    <div id="news-loading" class="flex items-center justify-center py-8">
-                        <div class="flex items-center text-sm text-gray-600">
-                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-texas-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Loading related news...
-                        </div>
-                    </div>
-                    
-                    <div id="news-articles" class="hidden">
-                        <!-- News articles will be populated here -->
-                    </div>
-                    
-                    <div id="news-error" class="hidden">
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <div class="flex">
-                                <svg class="w-5 h-5 text-yellow-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                </svg>
-                                <div>
-                                    <h4 class="text-sm font-medium text-yellow-800">News Unavailable</h4>
-                                    <p id="news-error-message" class="text-sm text-yellow-700 mt-1">Unable to load related news articles at this time.</p>
-                                    <button onclick="window.billDetailApp.loadNews()" class="mt-2 text-sm text-yellow-800 underline hover:text-yellow-900">
-                                        Try Again
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="news-empty" class="hidden">
-                        <div class="text-center py-8">
-                            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                            </svg>
-                            <h4 class="text-lg font-medium text-gray-900 mb-2">No Related News Found</h4>
-                            <p class="text-sm text-gray-500">There are currently no news articles related to this bill.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
 
-        // Load news articles
-        this.loadNews();
-    }
 
-    async loadNews() {
-        const newsLoading = document.getElementById('news-loading');
-        const newsArticles = document.getElementById('news-articles');
-        const newsError = document.getElementById('news-error');
-        const newsEmpty = document.getElementById('news-empty');
-        const newsErrorMessage = document.getElementById('news-error-message');
 
-        // Show loading state
-        newsLoading.classList.remove('hidden');
-        newsArticles.classList.add('hidden');
-        newsError.classList.add('hidden');
-        newsEmpty.classList.add('hidden');
-
-        try {
-            // Use optimized fetch with caching for news
-            const data = await (window.apiOptimizer ?
-                window.apiOptimizer.optimizedFetch(`/api/bills/news/${this.billId}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                }, {
-                    cacheType: 'news',
-                    cacheParams: { billId: this.billId }
-                }) :
-                this.fallbackNewsFetch()
-            );
-
-            // Handle both new API format and legacy format
-            const articles = data.data?.articles || data.articles || data || [];
-
-            if (!Array.isArray(articles) || articles.length === 0) {
-                newsLoading.classList.add('hidden');
-                newsEmpty.classList.remove('hidden');
-                return;
-            }
-
-            // Display news articles
-            newsArticles.innerHTML = `
-                <div class="space-y-4">
-                    ${articles.map(article => {
-                const publishedDate = article.publishedAt ?
-                    new Date(article.publishedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                    }) : null;
-
-                return `
-                            <article class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                <div class="flex flex-col space-y-2">
-                                    <h4 class="font-semibold text-gray-900 leading-tight">
-                                        <a 
-                                            href="${article.url}" 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            class="hover:text-texas-blue transition-colors"
-                                        >
-                                            ${article.headline || article.title}
-                                        </a>
-                                    </h4>
-                                    
-                                    <div class="flex items-center justify-between text-sm text-gray-600">
-                                        <div class="flex items-center space-x-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
-                                            </svg>
-                                            <span class="font-medium">${article.source || 'Unknown Source'}</span>
-                                        </div>
-                                        
-                                        ${publishedDate ? `
-                                            <div class="flex items-center space-x-1">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                                </svg>
-                                                <span>${publishedDate}</span>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                    
-                                    ${article.description ? `
-                                        <p class="text-sm text-gray-700 leading-relaxed">${article.description}</p>
-                                    ` : ''}
-                                    
-                                    <div class="flex items-center justify-between pt-2">
-                                        <a 
-                                            href="${article.url}" 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            class="inline-flex items-center text-sm text-texas-blue hover:text-texas-blue-700 transition-colors"
-                                        >
-                                            Read Full Article
-                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </div>
-                            </article>
-                        `;
-            }).join('')}
-                </div>
-                
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                    <p class="text-xs text-gray-500 text-center">
-                        News articles are automatically sourced and may not directly reference this specific bill.
-                    </p>
-                </div>
-            `;
-
-            newsLoading.classList.add('hidden');
-            newsArticles.classList.remove('hidden');
-
-        } catch (error) {
-            console.error('Error loading news:', error);
-
-            newsErrorMessage.textContent = error.message;
-            newsLoading.classList.add('hidden');
-            newsError.classList.remove('hidden');
-        }
-    }
-
-    // Fallback news fetch for when optimizer is not available
-    async fallbackNewsFetch() {
-        const response = await fetch(`/api/bills/news/${this.billId}`, {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('No news articles found for this bill.');
-            } else if (response.status === 429) {
-                throw new Error('News service is temporarily unavailable due to rate limits. Please try again later.');
-            } else if (response.status >= 500) {
-                throw new Error('News service is currently unavailable. Please try again later.');
-            } else {
-                throw new Error(`Failed to load news articles (${response.status}). Please try again.`);
-            }
-        }
-
-        return await response.json();
-    }
 
     renderOfficialLink() {
         // Generate fallback URL if official URL is not available
@@ -1098,7 +912,9 @@ View Details: ${window.location.href}`;
         console.log('✅ hideLoading() called');
         console.log('  - Loading element exists:', !!this.loadingElement);
         console.log('  - Bill content element exists:', !!this.billDetailContent);
+        console.log('  - Error state element exists:', !!this.errorState);
 
+        // Hide loading state
         if (this.loadingElement) {
             console.log('  - Loading element classes before:', this.loadingElement.className);
             this.loadingElement.classList.add('hidden');
@@ -1113,6 +929,24 @@ View Details: ${window.location.href}`;
             }
         }
         
+        // Hide error state (in case it was shown previously)
+        if (this.errorState) {
+            console.log('  - Error state classes before:', this.errorState.className);
+            this.errorState.classList.add('hidden');
+            this.errorState.style.display = 'none'; // Force hide with inline style
+            console.log('  - Error state classes after:', this.errorState.className);
+            console.log('  - Error state forcefully hidden');
+        } else {
+            console.error('  - Error state element not found! Re-querying...');
+            const errorEl = document.getElementById('error-state');
+            if (errorEl) {
+                errorEl.classList.add('hidden');
+                errorEl.style.display = 'none'; // Force hide with inline style
+                console.log('  - Found and forcefully hid error state element via re-query');
+            }
+        }
+        
+        // Show bill content
         if (this.billDetailContent) {
             console.log('  - Bill content classes before:', this.billDetailContent.className);
             this.billDetailContent.classList.remove('hidden');
@@ -1390,7 +1224,7 @@ function initializeBillDetailApp() {
         'bill-header',
         'sponsor-info',
         'summary-section',
-        'news-section',
+
         'official-link'
     ];
 

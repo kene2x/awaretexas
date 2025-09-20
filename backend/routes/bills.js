@@ -89,6 +89,13 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
       }
     });
     
+    // Sort bills by most recent first (lastActionDate, then filedDate, then lastUpdated)
+    billInstances.sort((a, b) => {
+      const dateA = new Date(a.lastActionDate || a.filedDate || a.lastUpdated || 0);
+      const dateB = new Date(b.lastActionDate || b.filedDate || b.lastUpdated || 0);
+      return dateB - dateA; // Most recent first
+    });
+    
     res.json({
       success: true,
       data: billInstances,

@@ -3,6 +3,9 @@ class BillTracker {
     constructor() {
         this.bills = [];
         this.filteredBills = [];
+        this.displayedBills = [];
+        this.billsPerPage = 10;
+        this.currentPage = 1;
         this.filters = {
             search: '',
             topics: [],
@@ -22,6 +25,7 @@ class BillTracker {
         this.resultsSummaryElement = document.getElementById('results-summary');
         this.resultsCountElement = document.getElementById('results-count');
         this.filterSummaryElement = document.getElementById('filter-summary');
+        this.showMoreButton = document.getElementById('show-more-button');
         
         this.searchInput = document.getElementById('search-input');
         this.topicsFilter = document.getElementById('topics-filter');
@@ -94,6 +98,13 @@ class BillTracker {
         this.clearFiltersButton.addEventListener('click', () => {
             this.clearAllFiltersWithAnimation();
         });
+        
+        // Show More button
+        if (this.showMoreButton) {
+            this.showMoreButton.addEventListener('click', () => {
+                this.showMoreBills();
+            });
+        }
         
         // Update clear button visibility based on active filters
         this.updateClearButtonState();
@@ -530,6 +541,7 @@ class BillTracker {
             window.cacheManager.set(filterKey, this.filteredBills);
         }
 
+        this.resetPagination();
         this.renderBills();
         this.updateResultsSummary();
     }
@@ -567,6 +579,7 @@ class BillTracker {
         this.statusFilter.selectedIndex = 0;
 
         this.filteredBills = [...this.bills];
+        this.resetPagination();
         this.renderBills();
         this.updateResultsSummary();
     }
@@ -675,48 +688,57 @@ class BillTracker {
     renderBills() {
         if (this.filteredBills.length === 0) {
             this.showNoResults();
+            this.hideShowMoreButton();
             return;
         }
 
         this.hideNoResults();
         
-        // Clear existing cards with fade out animation
-        const existingCards = this.billGridElement.querySelectorAll('.bill-card');
-        if (existingCards.length > 0) {
-            existingCards.forEach((card, index) => {
+        // Calculate bills to display based on current page
+        const startIndex = 0;
+        const endIndex = this.currentPage * this.billsPerPage;
+        this.displayedBills = this.filteredBills.slice(startIndex, endIndex);
+        
+        // Clear existing rows with fade out animation
+        const existingRows = this.billGridElement.querySelectorAll('.bill-row');
+        if (existingRows.length > 0) {
+            existingRows.forEach((row, index) => {
                 setTimeout(() => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(-10px)';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(-10px)';
                 }, index * 20);
             });
             
             setTimeout(() => {
                 this.billGridElement.innerHTML = '';
                 this.renderBillsWithAnimation();
-            }, existingCards.length * 20 + 100);
+            }, existingRows.length * 20 + 100);
         } else {
             this.billGridElement.innerHTML = '';
             this.renderBillsWithAnimation();
         }
+        
+        // Update show more button
+        this.updateShowMoreButton();
     }
 
     renderBillsWithAnimation() {
         // Create document fragment for better performance
         const fragment = document.createDocumentFragment();
         
-        this.filteredBills.forEach((bill, index) => {
-            const billCard = this.createBillCard(bill);
+        this.displayedBills.forEach((bill, index) => {
+            const billRow = this.createBillRow(bill);
             
             // Add enhanced staggered animation with Texas theme
-            billCard.classList.add('bill-card-animate-in');
-            billCard.style.animationDelay = `${index * 75}ms`;
-            billCard.style.opacity = '0';
+            billRow.classList.add('bill-row-animate-in');
+            billRow.style.animationDelay = `${index * 50}ms`;
+            billRow.style.opacity = '0';
             
-            fragment.appendChild(billCard);
+            fragment.appendChild(billRow);
             
             // Trigger animation after DOM insertion
             setTimeout(() => {
-                billCard.style.opacity = '1';
+                billRow.style.opacity = '1';
             }, 50);
         });
         
@@ -815,88 +837,324 @@ class BillTracker {
         return meaningfulName;
     }
 
-    createBillCard(bill) {
-        const card = document.createElement('article');
-        card.className = 'bill-card-component bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer animate-fade-in';
+    createBillRow(bill) {
+        const row = document.createElement('article');
+        row.className = 'bill-row bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md hover:border-texas-blue/30 transition-all duration-200 cursor-pointer animate-fade-in';
         
         // Add accessibility attributes
-        card.setAttribute('tabindex', '0');
-        card.setAttribute('role', 'button');
+        row.setAttribute('tabindex', '0');
+        row.setAttribute('role', 'button');
         
         const billTitle = bill.shortTitle || bill.fullTitle || 'Untitled Bill';
         const meaningfulName = this.generateMeaningfulName(bill);
         
-        card.setAttribute('aria-label', `${bill.billNumber}: ${billTitle}. Status: ${bill.status}. Click to view details.`);
-        card.setAttribute('aria-describedby', `bill-${bill.billNumber}-summary`);
+        row.setAttribute('aria-label', `${bill.billNumber}: ${billTitle}. Status: ${bill.status}. Click to view details.`);
         
         // Add keyboard navigation support
-        card.addEventListener('keydown', (e) => {
+        row.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                card.click();
+                row.click();
                 this.announceToScreenReader(`Opening details for ${bill.billNumber}`);
             }
         });
         
         // Enhanced status mapping using Texas flag color system
         const statusColors = {
-            'Filed': 'status-filed',
-            'In Committee': 'status-committee', 
-            'Passed': 'status-passed'
+            'Filed': 'bg-blue-50 text-blue-700 border-blue-200',
+            'In Committee': 'bg-yellow-50 text-yellow-700 border-yellow-200', 
+            'Passed': 'bg-green-50 text-green-700 border-green-200',
+            'Vetoed': 'bg-red-50 text-red-700 border-red-200',
+            'Signed': 'bg-emerald-50 text-emerald-700 border-emerald-200'
         };
         
-        const statusColor = statusColors[bill.status] || 'bg-gray-50 text-gray-700 border-gray-300';
+        const statusColor = statusColors[bill.status] || 'bg-gray-50 text-gray-700 border-gray-200';
         
-        // Get preview summary (first 150 characters of abstract or title)
-        const previewText = bill.abstract || bill.shortTitle || bill.fullTitle || '';
-        const preview = previewText.length > 150 ? previewText.substring(0, 150) + '...' : previewText;
+        // Get Gemini description (use abstract as Gemini-generated description for now)
+        const geminiDescription = bill.geminiSummary || bill.geminiDescription || bill.abstract || '';
+        const previewText = geminiDescription || bill.shortTitle || bill.fullTitle || '';
+        const preview = previewText.length > 120 ? previewText.substring(0, 120) + '...' : previewText;
         
         // Get primary sponsor
         const primarySponsor = bill.sponsors && bill.sponsors.length > 0 ? 
             (bill.sponsors[0].name || bill.sponsors[0]) : 'Unknown';
 
-        card.innerHTML = `
-            <div class="flex items-start justify-between mb-3 sm:mb-4">
-                <div class="flex-1">
-                    <h3 class="text-heading-3 text-texas-blue font-bold mb-2 leading-tight" role="heading" aria-level="3">${meaningfulName}</h3>
-                    <div class="flex items-center gap-2 mb-2">
-                        <span class="text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full border" role="text" aria-label="Bill number">${bill.billNumber}</span>
-                        <span class="status-badge ${statusColor}" role="status" aria-label="Bill status: ${bill.status}">
-                            <span aria-hidden="true">${bill.status === 'Filed' ? '📄' : bill.status === 'In Committee' ? '🏛️' : bill.status === 'Passed' ? '✅' : '📋'}</span> ${bill.status}
+        // Format last action date
+        const lastActionDate = bill.lastActionDate ? 
+            new Date(bill.lastActionDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            }) : '';
+
+        row.innerHTML = `
+            <div class="flex items-center justify-between gap-4">
+                <!-- Left section: Bill info -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-sm font-bold text-texas-blue bg-texas-blue/10 px-3 py-1 rounded-lg border border-texas-blue/20">
+                            ${bill.billNumber}
                         </span>
+                        <span class="status-badge text-xs font-medium px-2 py-1 rounded-full border ${statusColor}">
+                            ${bill.status}
+                        </span>
+                        ${lastActionDate ? `<span class="text-xs text-gray-500">${lastActionDate}</span>` : ''}
                     </div>
+                    
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1 truncate">
+                        ${meaningfulName}
+                    </h3>
+                    
+                    <p class="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                        ${preview}
+                    </p>
                 </div>
-            </div>
-            
-            <h4 class="text-body-lg font-semibold text-gray-900 mb-2 sm:mb-3 line-clamp-2 leading-snug" role="heading" aria-level="4">
-                ${bill.shortTitle || bill.fullTitle}
-            </h4>
-            
-            <p id="bill-${bill.billNumber}-summary" class="text-body text-gray-600 mb-3 sm:mb-4 line-clamp-3 hover-preview leading-relaxed" role="text">
-                ${preview}
-            </p>
-            
-            <div class="flex items-center justify-between text-body-sm text-gray-500 pt-3 border-t border-gray-200">
-                <span class="flex items-center font-medium" role="text" aria-label="Primary sponsor: ${primarySponsor}">
-                    <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
-                    ${primarySponsor}
-                </span>
-                <span class="text-texas-blue hover:text-texas-red font-semibold transition-colors duration-200 flex items-center" role="text" aria-label="Click to view bill details">
-                    View Details
-                    <svg class="w-4 h-4 ml-1 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </span>
+                
+                <!-- Right section: Sponsor and action -->
+                <div class="flex items-center gap-4 flex-shrink-0">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-xs text-gray-500 mb-1">Sponsor</div>
+                        <div class="text-sm font-medium text-gray-700">${primarySponsor}</div>
+                    </div>
+                    
+                    <button class="flex items-center gap-2 text-texas-blue hover:text-texas-red font-medium text-sm transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-texas-blue/5">
+                        View Details
+                        <svg class="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         `;
 
-        // Enhanced hover preview functionality
+        // Click handler for navigation to detail page
+        row.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Row clicked, navigating to detail page for:', bill.billNumber);
+            // Navigate to bill detail page
+            const billId = bill.id || bill.billNumber;
+            window.location.href = `bill-detail.html?id=${encodeURIComponent(billId)}`;
+        });
+
+        return row;
+    }
+
+    resetPagination() {
+        this.currentPage = 1;
+        this.displayedBills = [];
+    }
+
+    showMoreBills() {
+        this.currentPage++;
+        this.renderBills();
+        
+        // Smooth scroll to the new content
+        setTimeout(() => {
+            const newRows = this.billGridElement.querySelectorAll('.bill-row');
+            const firstNewRow = newRows[Math.max(0, (this.currentPage - 1) * this.billsPerPage)];
+            if (firstNewRow) {
+                firstNewRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 300);
+    }
+
+    updateShowMoreButton() {
+        if (!this.showMoreButton) return;
+        
+        const hasMoreBills = this.displayedBills.length < this.filteredBills.length;
+        
+        if (hasMoreBills) {
+            this.showMoreButton.style.display = 'block';
+            const remainingCount = this.filteredBills.length - this.displayedBills.length;
+            const nextBatchSize = Math.min(this.billsPerPage, remainingCount);
+            this.showMoreButton.textContent = `Show ${nextBatchSize} More Bills (${remainingCount} remaining)`;
+        } else {
+            this.showMoreButton.style.display = 'none';
+        }
+    }
+
+    hideShowMoreButton() {
+        if (this.showMoreButton) {
+            this.showMoreButton.style.display = 'none';
+        }
+    }
+
+    navigateToBillDetail(bill, event) {
+        console.log('Navigating to bill detail page:', bill);
+        
+        // Prevent any default navigation
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        // Navigate to bill detail page
+        const billId = bill.id || bill.billNumber;
+        window.location.href = `bill-detail.html?id=${encodeURIComponent(billId)}`;
+    }
+
+    showBillModal(bill) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+        modal.style.animation = 'fadeIn 0.2s ease-out';
+        
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.className = 'bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto';
+        
+        const primarySponsor = bill.sponsors && bill.sponsors.length > 0 ? 
+            (bill.sponsors[0].name || bill.sponsors[0]) : 'Unknown';
+            
+        const lastActionDate = bill.lastActionDate ? 
+            new Date(bill.lastActionDate).toLocaleDateString('en-US', { 
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long', 
+                day: 'numeric' 
+            }) : 'No date available';
+
+        modalContent.innerHTML = `
+            <div class="p-6">
+                <!-- Header -->
+                <div class="flex items-start justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">${bill.billNumber}</h2>
+                        <span class="inline-block px-3 py-1 text-sm font-medium rounded-full ${this.getStatusColorClass(bill.status)}">
+                            ${bill.status}
+                        </span>
+                    </div>
+                    <button class="close-modal text-gray-400 hover:text-gray-600 text-2xl font-bold" aria-label="Close modal">
+                        ×
+                    </button>
+                </div>
+                
+                <!-- Bill Title -->
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">
+                    ${bill.shortTitle || bill.fullTitle || 'No title available'}
+                </h3>
+                
+                <!-- Bill Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Primary Sponsor</h4>
+                        <p class="text-gray-600">${primarySponsor}</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Last Action Date</h4>
+                        <p class="text-gray-600">${lastActionDate}</p>
+                    </div>
+                    ${bill.committee ? `
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Committee</h4>
+                        <p class="text-gray-600">${bill.committee}</p>
+                    </div>
+                    ` : ''}
+                    ${bill.topics && bill.topics.length > 0 ? `
+                    <div>
+                        <h4 class="font-semibold text-gray-700 mb-2">Topics</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${bill.topics.map(topic => `<span class="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">${topic}</span>`).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <!-- Bill Abstract/Summary -->
+                ${bill.abstract ? `
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-700 mb-2">Summary</h4>
+                    <p class="text-gray-600 leading-relaxed">${bill.abstract}</p>
+                </div>
+                ` : ''}
+                
+                <!-- Last Action -->
+                ${bill.lastAction ? `
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-700 mb-2">Last Action</h4>
+                    <p class="text-gray-600">${bill.lastAction}</p>
+                </div>
+                ` : ''}
+                
+                <!-- Bill Text Preview -->
+                ${bill.billText ? `
+                <div class="mb-6">
+                    <h4 class="font-semibold text-gray-700 mb-2">Bill Text Preview</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg max-h-40 overflow-y-auto">
+                        <p class="text-sm text-gray-700 font-mono leading-relaxed">
+                            ${bill.billText.substring(0, 500)}${bill.billText.length > 500 ? '...' : ''}
+                        </p>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <!-- Actions -->
+                <div class="flex gap-3 pt-4 border-t">
+                    <a href="${bill.officialUrl || '#'}" target="_blank" class="btn-texas-primary">
+                        View on Texas Legislature Website
+                    </a>
+                    <button class="close-modal btn-secondary">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Add close functionality
+        const closeButtons = modal.querySelectorAll('.close-modal');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                modal.style.animation = 'fadeOut 0.2s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 200);
+            });
+        });
+        
+        // Close on overlay click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.animation = 'fadeOut 0.2s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 200);
+            }
+        });
+        
+        // Close on Escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                modal.style.animation = 'fadeOut 0.2s ease-out';
+                setTimeout(() => {
+                    document.body.removeChild(modal);
+                }, 200);
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+    }
+
+    getStatusColorClass(status) {
+        const statusColors = {
+            'Filed': 'bg-blue-100 text-blue-800',
+            'In Committee': 'bg-yellow-100 text-yellow-800', 
+            'Passed': 'bg-green-100 text-green-800',
+            'Vetoed': 'bg-red-100 text-red-800',
+            'Signed': 'bg-emerald-100 text-emerald-800'
+        };
+        return statusColors[status] || 'bg-gray-100 text-gray-800';
+    }
+
+    // Enhanced hover preview functionality (keeping for compatibility)
+    setupHoverPreview(element) {
         let hoverTimeout;
         let isHovering = false;
         
-        card.addEventListener('mouseenter', () => {
+        element.addEventListener('mouseenter', () => {
             isHovering = true;
             // Shorter delay for better responsiveness
             hoverTimeout = setTimeout(() => {
@@ -931,13 +1189,7 @@ class BillTracker {
             this.hideHoverPreview();
         });
 
-        // Add click handler for navigation to detail page
-        card.addEventListener('click', () => {
-            const billId = bill.id || bill.billNumber;
-            if (billId) {
-                window.location.href = `bill-detail.html?id=${encodeURIComponent(billId)}`;
-            }
-        });
+        // Click handler is now handled in createBillRow function
 
         return card;
     }
@@ -1058,8 +1310,14 @@ class BillTracker {
     updateResultsSummary() {
         const totalBills = this.bills.length;
         const filteredCount = this.filteredBills.length;
+        const displayedCount = this.displayedBills.length;
         
-        this.resultsCountElement.textContent = filteredCount;
+        // Update results count to show pagination info
+        if (displayedCount < filteredCount) {
+            this.resultsCountElement.textContent = `${displayedCount} of ${filteredCount}`;
+        } else {
+            this.resultsCountElement.textContent = filteredCount;
+        }
         
         const hasActiveFilters = this.filters.search || 
                                 this.filters.topics.length > 0 || 
