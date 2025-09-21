@@ -233,30 +233,30 @@ class BillDetailApp {
             // Hide loading, show content
             console.log('🎉 Hiding loading state and showing content...');
             this.hideLoading();
-            
+
             // Aggressive fix: directly manipulate DOM elements
             const loadingElement = document.getElementById('loading');
             const contentElement = document.getElementById('bill-detail-content');
             const errorElement = document.getElementById('error-state');
-            
+
             if (loadingElement) {
                 loadingElement.style.display = 'none';
                 loadingElement.classList.add('hidden');
                 console.log('🔧 Directly hid loading element');
             }
-            
+
             if (contentElement) {
                 contentElement.style.display = 'block';
                 contentElement.classList.remove('hidden');
                 console.log('🔧 Directly showed content element');
             }
-            
+
             if (errorElement) {
                 errorElement.style.display = 'none';
                 errorElement.classList.add('hidden');
                 console.log('🔧 Directly hid error element');
             }
-            
+
             // Force hide loading as fallback
             setTimeout(() => {
                 const loadingEl = document.getElementById('loading');
@@ -273,24 +273,24 @@ class BillDetailApp {
             }, 100);
 
             console.log('✅ Bill details loaded successfully!');
-        
-        // Final check to ensure loading is hidden and error is hidden
-        setTimeout(() => {
-            const loadingEl = document.getElementById('loading');
-            const errorEl = document.getElementById('error-state');
-            
-            if (loadingEl && !loadingEl.classList.contains('hidden')) {
-                console.log('🚨 Loading still visible, forcing hide');
-                loadingEl.classList.add('hidden');
-                loadingEl.style.display = 'none';
-            }
-            
-            if (errorEl && !errorEl.classList.contains('hidden')) {
-                console.log('🚨 Error state still visible, forcing hide');
-                errorEl.classList.add('hidden');
-                errorEl.style.display = 'none';
-            }
-        }, 500);
+
+            // Final check to ensure loading is hidden and error is hidden
+            setTimeout(() => {
+                const loadingEl = document.getElementById('loading');
+                const errorEl = document.getElementById('error-state');
+
+                if (loadingEl && !loadingEl.classList.contains('hidden')) {
+                    console.log('🚨 Loading still visible, forcing hide');
+                    loadingEl.classList.add('hidden');
+                    loadingEl.style.display = 'none';
+                }
+
+                if (errorEl && !errorEl.classList.contains('hidden')) {
+                    console.log('🚨 Error state still visible, forcing hide');
+                    errorEl.classList.add('hidden');
+                    errorEl.style.display = 'none';
+                }
+            }, 500);
 
         } catch (error) {
             console.error('❌ Error in loadBillDetails:', error);
@@ -925,7 +925,7 @@ View Details: ${window.location.href}`;
                 console.log('  - Found and hid loading element via re-query');
             }
         }
-        
+
         // Hide error state (in case it was shown previously)
         if (this.errorState) {
             console.log('  - Error state classes before:', this.errorState.className);
@@ -942,7 +942,7 @@ View Details: ${window.location.href}`;
                 console.log('  - Found and forcefully hid error state element via re-query');
             }
         }
-        
+
         // Show bill content
         if (this.billDetailContent) {
             console.log('  - Bill content classes before:', this.billDetailContent.className);
@@ -988,7 +988,7 @@ View Details: ${window.location.href}`;
     async renderVotingChart() {
         const votingContainer = document.getElementById('voting-chart-container');
         const votingSection = document.getElementById('voting-section');
-        
+
         if (!votingContainer) {
             console.log('No voting chart container found');
             return;
@@ -997,7 +997,7 @@ View Details: ${window.location.href}`;
         try {
             // Fetch real voting data from the API
             console.log(`🗳️ Fetching voting data for ${this.billId}...`);
-            
+
             const response = await fetch(`/api/bills/${encodeURIComponent(this.billId)}/voting`, {
                 headers: {
                     'Accept': 'application/json',

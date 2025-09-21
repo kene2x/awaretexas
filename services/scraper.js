@@ -264,6 +264,31 @@ class TexasLegislatureScraper {
       } catch (error) {
         console.warn(`❌ Failed to fetch bill content for ${displayBillNumber}:`, error.message);
       }
+
+      // Fetch bill stages information
+      try {
+        console.log(`📊 Attempting to fetch bill stages for ${displayBillNumber}...`);
+        const stagesResult = await this.fetchBillStages(standardizedBillNumber);
+        
+        if (stagesResult && stagesResult.length > 0) {
+          billData.stages = stagesResult;
+          console.log(`✅ Successfully fetched ${stagesResult.length} bill stages for ${displayBillNumber}`);
+          
+          // Update status based on latest stage if available
+          const latestStage = stagesResult[stagesResult.length - 1];
+          if (latestStage && latestStage.status) {
+            billData.status = latestStage.status;
+            billData.lastAction = latestStage.action || billData.lastAction;
+            billData.lastActionDate = latestStage.date || billData.lastActionDate;
+          }
+        } else {
+          billData.stages = [];
+          console.log(`⚠️ No bill stages found for ${displayBillNumber}`);
+        }
+      } catch (error) {
+        console.warn(`❌ Failed to fetch bill stages for ${displayBillNumber}:`, error.message);
+        billData.stages = [];
+      }
       
       return billData;
       
@@ -414,6 +439,222 @@ class TexasLegislatureScraper {
     }
     
     return topics.length > 0 ? topics : ['General'];
+  }
+
+  /**
+   * Fetch bill stages from BillStages.aspx page
+   * @param {string} billNumber - Standardized bill number (e.g., "SB1")
+   * @returns {Promise<Array>} Array of stage objects with date, action, status, and location
+   */
+  async fetchBillStages(billNumber) {
+    if (!billNumber) return [];
+    
+    try {
+      const sessions = ['89R', '88R', '87R', '86R'];
+      
+      for (const session of sessions) {
+        try {
+          const stagesUrl = `https://capitol.texas.gov/BillLookup/BillStages.aspx?LegSess=${session}&Bill=${billNumber}`;
+          console.log(`🔗 Trying Bill Stages URL: ${stagesUrl}`);
+          
+          const response = await axios.get(stagesUrl, {
+            timeout: 10000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
+            }
+          });
+          
+          if (response.status === 200 && response.data) {
+            const $ = cheerio.load(response.data);
+            const stages = [];
+            
+            // Look for the stages table - it's usually in a table with multiple rows
+            const stageRows = $('table tr').toArray();
+            
+            for (let i = 0; i < stageRows.length; i++) {
+              const $row = $(stageRows[i]);
+              const cells = $row.find('td');
+              
+              if (cells.length >= 3) {
+                // Extract stage information from table cells
+                const dateText = cells.eq(0).text().trim();
+                const actionText = cells.eq(1).text().trim();
+                const locationText = cells.length > 2 ? cells.eq(2).text().trim() : '';
+                
+                // Skip header rows and empty rows
+                if (dateText && actionText && 
+                    !dateText.toLowerCase().includes('date') &&
+                    !actionText.toLowerCase().includes('action') &&
+                    dateText.length > 3) {
+                  
+                  const stage = {
+                    date: this.parseStageDate(dateText),
+                    action: actionText,
+                    location: locationText,
+                    status: this.extractStatusFromStageAction(actionText),
+                    rawDate: dateText
+                  };
+                  
+                  stages.push(stage);
+                }
+              }
+            }
+            
+            // If no stages found in table format, try alternative selectors
+            if (stages.length === 0) {
+              // Look for stages in div or span elements
+              const stageElements = $('.stage, .bill-stage, [class*="stage"]').toArray();
+              
+              for (const element of stageElements) {
+                const $element = $(element);
+                const text = $element.text().trim();
+                
+                if (text.length > 10) {
+                  const stage = this.parseStageFromText(text);
+                  if (stage) {
+                    stages.push(stage);
+                  }
+                }
+              }
+            }
+            
+            // Sort stages by date (oldest first)
+            stages.sort((a, b) => {
+              const dateA = new Date(a.date || 0);
+              const dateB = new Date(b.date || 0);
+              return dateA - dateB;
+            });
+            
+            if (stages.length > 0) {
+              console.log(`✅ Found ${stages.length} bill stages for ${billNumber} in session ${session}`);
+              return stages;
+            }
+          }
+        } catch (sessionError) {
+          console.log(`Bill stages not found for ${billNumber} in session ${session}`);
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      console.warn(`Error fetching bill stages for ${billNumber}:`, error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Parse stage date from various date formats
+   * @param {string} dateText - Date text from stage
+   * @returns {Date|null} Parsed date or null
+   */
+  parseStageDate(dateText) {
+    if (!dateText) return null;
+    
+    try {
+      // Clean up the date text
+      const cleanDate = dateText.replace(/[^\d\/\-\s]/g, '').trim();
+      
+      // Try various date patterns
+      const patterns = [
+        /(\d{1,2}\/\d{1,2}\/\d{4})/,           // MM/DD/YYYY
+        /(\d{1,2}-\d{1,2}-\d{4})/,             // MM-DD-YYYY
+        /(\d{4}-\d{1,2}-\d{1,2})/,             // YYYY-MM-DD
+        /(\d{1,2}\/\d{1,2}\/\d{2})/            // MM/DD/YY
+      ];
+      
+      for (const pattern of patterns) {
+        const match = cleanDate.match(pattern);
+        if (match) {
+          const date = new Date(match[1]);
+          if (!isNaN(date.getTime())) {
+            return date;
+          }
+        }
+      }
+      
+      // Try parsing the original text directly
+      const directDate = new Date(dateText);
+      if (!isNaN(directDate.getTime())) {
+        return directDate;
+      }
+    } catch (error) {
+      console.warn('Error parsing stage date:', dateText, error.message);
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract status from stage action text
+   * @param {string} actionText - Stage action text
+   * @returns {string} Normalized status
+   */
+  extractStatusFromStageAction(actionText) {
+    if (!actionText) return 'Filed';
+    
+    const actionLower = actionText.toLowerCase();
+    
+    // More specific status mapping based on legislative process
+    if (actionLower.includes('effective') || actionLower.includes('enacted')) {
+      return 'Effective';
+    } else if (actionLower.includes('signed by governor') || actionLower.includes('governor signed')) {
+      return 'Signed';
+    } else if (actionLower.includes('vetoed')) {
+      return 'Vetoed';
+    } else if (actionLower.includes('sent to governor') || actionLower.includes('enrolled')) {
+      return 'Sent to Governor';
+    } else if (actionLower.includes('passed') && actionLower.includes('house')) {
+      return 'Passed House';
+    } else if (actionLower.includes('passed') && actionLower.includes('senate')) {
+      return 'Passed Senate';
+    } else if (actionLower.includes('committee') || actionLower.includes('referred')) {
+      return 'In Committee';
+    } else if (actionLower.includes('reported') || actionLower.includes('committee report')) {
+      return 'Committee Report';
+    } else if (actionLower.includes('engrossed')) {
+      return 'Engrossed';
+    } else if (actionLower.includes('amended')) {
+      return 'Amended';
+    } else if (actionLower.includes('read') && actionLower.includes('first')) {
+      return 'First Reading';
+    } else if (actionLower.includes('read') && actionLower.includes('second')) {
+      return 'Second Reading';
+    } else if (actionLower.includes('read') && actionLower.includes('third')) {
+      return 'Third Reading';
+    } else if (actionLower.includes('filed') || actionLower.includes('introduced')) {
+      return 'Filed';
+    }
+    
+    return 'In Progress'; // Default for unrecognized actions
+  }
+
+  /**
+   * Parse stage information from free text
+   * @param {string} text - Stage text
+   * @returns {Object|null} Stage object or null
+   */
+  parseStageFromText(text) {
+    try {
+      // Look for date patterns in the text
+      const dateMatch = text.match(/(\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}-\d{1,2}-\d{4})/);
+      
+      if (dateMatch) {
+        const date = this.parseStageDate(dateMatch[1]);
+        const action = text.replace(dateMatch[0], '').trim();
+        
+        return {
+          date: date,
+          action: action,
+          location: '',
+          status: this.extractStatusFromStageAction(action),
+          rawDate: dateMatch[1]
+        };
+      }
+    } catch (error) {
+      console.warn('Error parsing stage from text:', text, error.message);
+    }
+    
+    return null;
   }
 
 
