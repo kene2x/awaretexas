@@ -60,18 +60,12 @@ async function scrapeFreshBills() {
             throw new Error('No bills were scraped from the website');
         }
         
-        console.log(`✅ Successfully scraped ${bills.length} bills`);
+        console.log(`✅ Successfully scraped ${bills.length} bills (limited to 50 most recent)`);
         
-        // Sort bills by most recent first
-        console.log('📅 Sorting bills by most recent...');
-        const sortedBills = bills.sort((a, b) => {
-            // Sort by lastActionDate first, then filedDate, then lastUpdated
-            const dateA = new Date(a.lastActionDate || a.filedDate || a.lastUpdated || 0);
-            const dateB = new Date(b.lastActionDate || b.filedDate || b.lastUpdated || 0);
-            return dateB - dateA; // Most recent first
-        });
+        // Bills are already sorted and limited by the scraper
+        const sortedBills = bills;
         
-        console.log('✅ Bills sorted by most recent first');
+        console.log('✅ Bills are already sorted by most recent first');
         
         // Save bills to database
         console.log('💾 Saving bills to database...');

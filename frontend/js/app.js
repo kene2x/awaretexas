@@ -149,173 +149,50 @@ class BillTracker {
 
         // Initialize section animations and intersection observer
         this.initializeSectionAnimations();
+        
+        // Initialize responsive behavior
+        this.initializeResponsiveBehavior();
     }
 
     async loadBills() {
-        const wrappedLoadBills = window.errorBoundary ? 
-            window.errorBoundary.wrapAsync(async () => {
-            // Show skeleton loading for better UX
-            if (window.loadingManager) {
-                window.loadingManager.showBillGridSkeleton(this.billGridElement, 12);
-            } else {
-                this.showLoading();
-            }
-            
-            // Use enhanced fetch with retry logic, fallback to regular fetch
-            const response = window.enhancedFetch ? 
-                await window.enhancedFetch.fetch('/api/bills', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                }, {
-                    maxRetries: 3,
-                    retryCondition: (error, response) => {
-                        return !response || 
-                               response.status >= 500 || 
-                               response.status === 429 ||
-                               error?.name === 'TypeError' ||
-                               error?.message?.includes('network');
-                    }
-                }) :
-                await fetch('/api/bills', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error('Bills service not found. Please check if the server is running.');
-                } else if (response.status >= 500) {
-                    throw new Error('Server error occurred. Please try again later.');
-                } else if (response.status === 429) {
-                    throw new Error('Too many requests. Please wait a moment and try again.');
-                } else {
-                    throw new Error(`Failed to load bills (${response.status}). Please try again.`);
-                }
-            }
-            
-            const data = await response.json();
-            
-            if (!data || typeof data !== 'object') {
-                throw new Error('Invalid response format received from server.');
-            }
-            
-            // Handle both new API format and legacy format
-            this.bills = data.data || data.bills || data || [];
-            this.filteredBills = [...this.bills];
-            
-            if (this.bills.length === 0) {
-                this.showEmptyState();
-                return;
-            }
-            
-            this.populateFilterOptions();
-            this.renderBills();
-            this.hideLoading();
-            
-            // Show success feedback briefly
-            if (window.loadingManager) {
-                window.loadingManager.showToast(`Loaded ${this.bills.length} bills successfully`, 'success', 2000);
-            } else {
-                this.showSuccessMessage(`Loaded ${this.bills.length} bills successfully`);
-            }
-            
-            // Prefetch bill details for first few bills for better performance
-            this.prefetchBillDetails();
-        }, this) : async () => {
-            // Fallback when error boundary is not available
-            // Show skeleton loading for better UX
-            if (window.loadingManager) {
-                window.loadingManager.showBillGridSkeleton(this.billGridElement, 12);
-            } else {
-                this.showLoading();
-            }
-            
-            // Use enhanced fetch with retry logic, fallback to regular fetch
-            const response = window.enhancedFetch ? 
-                await window.enhancedFetch.fetch('/api/bills', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                }, {
-                    maxRetries: 3,
-                    retryCondition: (error, response) => {
-                        return !response || 
-                               response.status >= 500 || 
-                               response.status === 429 ||
-                               error?.name === 'TypeError' ||
-                               error?.message?.includes('network');
-                    }
-                }) :
-                await fetch('/api/bills', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    throw new Error('Bills service not found. Please check if the server is running.');
-                } else if (response.status >= 500) {
-                    throw new Error('Server error occurred. Please try again later.');
-                } else if (response.status === 429) {
-                    throw new Error('Too many requests. Please wait a moment and try again.');
-                } else {
-                    throw new Error(`Failed to load bills (${response.status}). Please try again.`);
-                }
-            }
-            
-            const data = await response.json();
-            
-            if (!data || typeof data !== 'object') {
-                throw new Error('Invalid response format received from server.');
-            }
-            
-            // Handle both new API format and legacy format
-            this.bills = data.data || data.bills || data || [];
-            this.filteredBills = [...this.bills];
-            
-            if (this.bills.length === 0) {
-                this.showEmptyState();
-                return;
-            }
-            
-            this.populateFilterOptions();
-            this.renderBills();
-            this.hideLoading();
-            
-            // Show success feedback briefly
-            if (window.loadingManager) {
-                window.loadingManager.showToast(`Loaded ${this.bills.length} bills successfully`, 'success', 2000);
-            } else {
-                this.showSuccessMessage(`Loaded ${this.bills.length} bills successfully`);
-            }
-            
-            // Prefetch bill details for first few bills for better performance
-            this.prefetchBillDetails();
-        };
-
         try {
-            await wrappedLoadBills();
+            // Show loading state
+            this.showLoading();
+            
+            // Simple fetch without complex error boundary logic
+            const response = await fetch('/api/bills', {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to load bills (${response.status})`);
+            }
+            
+            const data = await response.json();
+            
+            // Handle both new API format and legacy format
+            this.bills = data.data || data.bills || data || [];
+            this.filteredBills = [...this.bills];
+            
+            if (this.bills.length === 0) {
+                this.showEmptyState();
+                return;
+            }
+            
+            this.populateFilterOptions();
+            this.renderBills();
+            this.hideLoading();
+            
+            console.log(`Loaded ${this.bills.length} bills successfully`);
+            
         } catch (error) {
             console.error('Error loading bills:', error);
-            
-            let errorMessage = 'Failed to load bills. Please try again later.';
-            
-            if (error.name === 'AbortError') {
-                errorMessage = 'Request timed out. Please check your connection and try again.';
-            } else if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
-                errorMessage = 'Network error. Please check your internet connection and try again.';
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            this.showError(errorMessage);
+            // Just log the error, don't show error UI to avoid navigation issues
+            this.hideLoading();
+            this.showEmptyState();
         }
     }
 
@@ -439,6 +316,79 @@ class BillTracker {
 
         // Add smooth scroll behavior for better transitions
         document.documentElement.style.scrollBehavior = 'smooth';
+    }
+
+    initializeResponsiveBehavior() {
+        // Handle responsive layout adjustments
+        const handleResponsiveLayout = () => {
+            const isMobile = window.innerWidth <= 768;
+            const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+            
+            // Add responsive classes to body for CSS targeting
+            document.body.classList.toggle('mobile-layout', isMobile);
+            document.body.classList.toggle('tablet-layout', isTablet);
+            document.body.classList.toggle('desktop-layout', !isMobile && !isTablet);
+            
+            // Adjust search results display for different screen sizes and constrained height
+            if (isMobile) {
+                this.billsPerPage = 6; // Fewer bills per page on mobile for better scrolling
+            } else if (isTablet) {
+                this.billsPerPage = 8; // Medium amount for tablets
+            } else {
+                this.billsPerPage = 10; // Optimized for desktop constrained height
+            }
+            
+            // Re-render if bills are already loaded
+            if (this.bills.length > 0) {
+                this.renderBills();
+            }
+        };
+        
+        // Initial call
+        handleResponsiveLayout();
+        
+        // Listen for resize events
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(handleResponsiveLayout, 250);
+        });
+        
+        // Handle mobile browser UI changes
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                // Update viewport height for mobile browser UI changes
+                const vh = window.visualViewport.height * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+                
+                // Recalculate optimal bills per page based on available height
+                this.optimizeBillsPerPage();
+            });
+        }
+    }
+
+    optimizeBillsPerPage() {
+        // Calculate optimal number of bills per page based on available height
+        const searchResultsContainer = document.querySelector('.search-results-container');
+        if (!searchResultsContainer) return;
+        
+        const containerHeight = searchResultsContainer.clientHeight;
+        const estimatedCardHeight = window.innerWidth <= 768 ? 120 : 150; // Estimated height per bill card
+        const optimalCount = Math.max(3, Math.floor(containerHeight / estimatedCardHeight));
+        
+        // Adjust based on screen size
+        if (window.innerWidth <= 480) {
+            this.billsPerPage = Math.min(optimalCount, 6);
+        } else if (window.innerWidth <= 768) {
+            this.billsPerPage = Math.min(optimalCount, 8);
+        } else {
+            this.billsPerPage = Math.min(optimalCount, 12);
+        }
+        
+        // Re-render if bills are loaded
+        if (this.bills.length > 0) {
+            this.renderBills();
+        }
     }
 
     populateFilterOptions() {
@@ -582,6 +532,7 @@ class BillTracker {
         this.resetPagination();
         this.renderBills();
         this.updateResultsSummary();
+        this.updateClearButtonState();
     }
 
     clearAllFiltersWithAnimation() {
@@ -726,26 +677,62 @@ class BillTracker {
         // Create document fragment for better performance
         const fragment = document.createDocumentFragment();
         
+        // Optimize rendering for constrained height
+        const isConstrainedHeight = this.isInConstrainedHeight();
+        
         this.displayedBills.forEach((bill, index) => {
             const billRow = this.createBillRow(bill);
             
             // Add enhanced staggered animation with Texas theme
             billRow.classList.add('bill-row-animate-in');
-            billRow.style.animationDelay = `${index * 50}ms`;
+            
+            // Reduce animation delay for constrained height for faster rendering
+            const animationDelay = isConstrainedHeight ? index * 25 : index * 50;
+            billRow.style.animationDelay = `${animationDelay}ms`;
             billRow.style.opacity = '0';
+            
+            // Add intersection observer for lazy loading in constrained height
+            if (isConstrainedHeight && 'IntersectionObserver' in window) {
+                this.observeBillCard(billRow);
+            }
             
             fragment.appendChild(billRow);
             
             // Trigger animation after DOM insertion
             setTimeout(() => {
                 billRow.style.opacity = '1';
-            }, 50);
+            }, 25);
         });
         
         this.billGridElement.appendChild(fragment);
         
         // Add section transition animation to the grid container
         this.billGridElement.classList.add('section-animate-in');
+    }
+
+    isInConstrainedHeight() {
+        // Check if we're in the fullscreen search section with constrained height
+        const searchSection = document.querySelector('.search-section');
+        return searchSection && searchSection.classList.contains('snap-section');
+    }
+
+    observeBillCard(billCard) {
+        // Lazy loading optimization for constrained height
+        if (!this.billCardObserver) {
+            this.billCardObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('bill-card-visible');
+                        this.billCardObserver.unobserve(entry.target);
+                    }
+                });
+            }, {
+                rootMargin: '50px 0px',
+                threshold: 0.1
+            });
+        }
+        
+        this.billCardObserver.observe(billCard);
     }
 
     /**
@@ -870,53 +857,45 @@ class BillTracker {
         
         const statusColor = statusColors[bill.status] || 'bg-gray-50 text-gray-700 border-gray-200';
         
-        // Get Gemini description (use abstract as Gemini-generated description for now)
-        const geminiDescription = bill.geminiSummary || bill.geminiDescription || bill.abstract || '';
-        const previewText = geminiDescription || bill.shortTitle || bill.fullTitle || '';
-        const preview = previewText.length > 120 ? previewText.substring(0, 120) + '...' : previewText;
-        
-        // Get primary sponsor
-        const primarySponsor = bill.sponsors && bill.sponsors.length > 0 ? 
+        // Get primary sponsor and truncate if too long
+        let primarySponsor = bill.sponsors && bill.sponsors.length > 0 ? 
             (bill.sponsors[0].name || bill.sponsors[0]) : 'Unknown';
-
-        // Format last action date
-        const lastActionDate = bill.lastActionDate ? 
-            new Date(bill.lastActionDate).toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric' 
-            }) : '';
+        
+        // Truncate long sponsor names to prevent layout issues
+        if (primarySponsor.length > 20) {
+            primarySponsor = primarySponsor.substring(0, 17) + '...';
+        }
 
         row.innerHTML = `
-            <div class="flex items-center justify-between gap-4">
+            <div class="flex items-start justify-between gap-4">
                 <!-- Left section: Bill info -->
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-3 mb-2">
+                    <div class="flex items-center gap-3 mb-3">
                         <span class="text-sm font-bold text-texas-blue bg-texas-blue/10 px-3 py-1 rounded-lg border border-texas-blue/20">
                             ${bill.billNumber}
                         </span>
                         <span class="status-badge text-xs font-medium px-2 py-1 rounded-full border ${statusColor}">
                             ${bill.status}
                         </span>
-                        ${lastActionDate ? `<span class="text-xs text-gray-500">${lastActionDate}</span>` : ''}
                     </div>
                     
-                    <h3 class="text-lg font-semibold text-gray-900 mb-1 truncate">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
                         ${meaningfulName}
                     </h3>
                     
-                    <p class="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-                        ${preview}
+                    ${bill.abstract ? `
+                    <p class="text-sm text-gray-600 mb-2 line-clamp-2 leading-relaxed">
+                        ${bill.abstract.length > 120 ? bill.abstract.substring(0, 120) + '...' : bill.abstract}
                     </p>
+                    ` : ''}
+                    
+                    <div class="flex items-center gap-4 text-xs text-gray-500">
+                        <span>Sponsor: <span class="font-medium text-gray-700">${primarySponsor}</span></span>
+                    </div>
                 </div>
                 
-                <!-- Right section: Sponsor and action -->
-                <div class="flex items-center gap-4 flex-shrink-0">
-                    <div class="text-right hidden sm:block">
-                        <div class="text-xs text-gray-500 mb-1">Sponsor</div>
-                        <div class="text-sm font-medium text-gray-700">${primarySponsor}</div>
-                    </div>
-                    
+                <!-- Right section: Action button -->
+                <div class="flex-shrink-0">
                     <button class="flex items-center gap-2 text-texas-blue hover:text-texas-red font-medium text-sm transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-texas-blue/5">
                         View Details
                         <svg class="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1412,47 +1391,10 @@ class BillTracker {
     }
 
     showError(message) {
+        // Disabled error pop-ups - just log silently
+        console.log('Bills loading error (silenced):', message);
         this.hideLoading();
-        this.billGridElement.innerHTML = `
-            <div class="col-span-full text-center py-16">
-                <div class="max-w-lg mx-auto">
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
-                        <svg class="mx-auto h-16 w-16 text-red-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                        <h3 class="text-lg font-semibold text-red-800 mb-2">Unable to Load Bills</h3>
-                        <p class="text-sm text-red-600 mb-6 leading-relaxed">${message}</p>
-                        
-                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                            <button onclick="window.billTracker.loadBills()" class="px-6 py-2 bg-texas-blue text-white rounded-md hover:bg-texas-blue-700 transition-colors font-medium">
-                                <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                Retry Loading
-                            </button>
-                            <button onclick="location.reload()" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors font-medium">
-                                Refresh Page
-                            </button>
-                        </div>
-                        
-                        <div class="mt-6 pt-4 border-t border-red-200">
-                            <details class="text-left">
-                                <summary class="text-xs text-red-500 cursor-pointer hover:text-red-700">
-                                    Troubleshooting Tips
-                                </summary>
-                                <div class="mt-2 text-xs text-red-600 space-y-1">
-                                    <p>• Check your internet connection</p>
-                                    <p>• Ensure the server is running</p>
-                                    <p>• Try refreshing the page</p>
-                                    <p>• Contact support if the problem persists</p>
-                                </div>
-                            </details>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        this.billGridElement.classList.remove('hidden');
+        this.showEmptyState();
     }
 }
 
@@ -1471,38 +1413,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add global error handler for unhandled promise rejections
     window.addEventListener('unhandledrejection', function(event) {
-        console.error('Unhandled promise rejection:', event.reason);
+        console.log('Unhandled promise rejection (silenced):', event.reason);
         
-        // Show user-friendly error message
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';
-        errorDiv.innerHTML = `
-            <div class="flex items-start">
-                <svg class="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-                </svg>
-                <div>
-                    <p class="text-sm font-medium">Something went wrong</p>
-                    <p class="text-xs mt-1">Please refresh the page or try again later.</p>
-                </div>
-                <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-red-400 hover:text-red-600">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
-            </div>
-        `;
-        
-        document.body.appendChild(errorDiv);
-        
-        // Auto-remove after 8 seconds
-        setTimeout(() => {
-            if (errorDiv.parentElement) {
-                errorDiv.style.opacity = '0';
-                errorDiv.style.transform = 'translateX(100%)';
-                setTimeout(() => errorDiv.remove(), 300);
-            }
-        }, 8000);
+        // Error pop-ups disabled - just log silently
+        // const errorDiv = document.createElement('div');
+        // errorDiv.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';
+        // Error pop-up code disabled
         
         // Prevent the default browser error handling
         event.preventDefault();

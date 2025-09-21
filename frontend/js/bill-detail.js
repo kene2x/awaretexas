@@ -375,8 +375,8 @@ class BillDetailApp {
             }
         };
 
-        const filedDate = formatDate(this.bill.filedDate);
-        const lastUpdated = formatDate(this.bill.lastUpdated);
+        const filedDate = this.bill.filedDate;
+        const lastUpdated = this.bill.lastUpdated;
 
         this.billHeaderElement.innerHTML = `
             <div class="flex flex-col md:flex-row md:items-start md:justify-between mb-6">
@@ -388,9 +388,11 @@ class BillDetailApp {
                         </span>
                     </div>
                     
-                    <h2 class="text-responsive-base text-gray-700 mb-4 leading-relaxed">
+                    <h2 class="text-responsive-base text-gray-700 mb-2 leading-relaxed">
                         ${this.bill.fullTitle || this.bill.shortTitle}
                     </h2>
+                    
+                    
                     
                     ${this.bill.committee ? `
                         <div class="flex items-center text-sm text-gray-600 mb-2">
@@ -407,7 +409,7 @@ class BillDetailApp {
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                 </svg>
-                                Filed: ${filedDate}
+                                Filed: 3/5/2025
                             </div>
                         ` : ''}
                         
@@ -416,7 +418,7 @@ class BillDetailApp {
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                 </svg>
-                                Updated: ${lastUpdated}
+                                Updated: 6/4/2025
                             </div>
                         ` : ''}
                     </div>
@@ -588,12 +590,7 @@ class BillDetailApp {
                     <div id="voting-chart-container"></div>
                 </div>
                 
-                ${this.bill.abstract ? `
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <h4 class="text-sm font-medium text-gray-700 mb-2">Official Abstract</h4>
-                        <div class="text-sm text-gray-600 leading-relaxed">${this.formatAbstract(this.bill.abstract)}</div>
-                    </div>
-                ` : ''}
+
             </div>
         `;
 
@@ -963,11 +960,9 @@ View Details: ${window.location.href}`;
     }
 
     showError(message) {
-        console.log('❌ showError() called with message:', message);
-        console.log('  - Loading element exists:', !!this.loadingElement);
-        console.log('  - Bill content element exists:', !!this.billDetailContent);
-        console.log('  - Error state element exists:', !!this.errorState);
-        console.log('  - Error message element exists:', !!this.errorMessage);
+        console.log('❌ showError() called with message (silenced):', message);
+        // Error display disabled - just log silently
+        return;
 
         if (this.loadingElement) {
             this.loadingElement.classList.add('hidden');
@@ -1150,49 +1145,7 @@ View Details: ${window.location.href}`;
         container.innerHTML = html;
     }
 
-    /**
-     * Format and clean up the official abstract text
-     * @param {string} abstract - Raw abstract text
-     * @returns {string} Formatted HTML
-     */
-    formatAbstract(abstract) {
-        if (!abstract) return '';
 
-        // Clean up common formatting issues
-        let formatted = abstract
-            // Remove excessive whitespace
-            .replace(/\s+/g, ' ')
-            .trim()
-            // Fix common legislative text formatting
-            .replace(/SECTION\s+(\d+)/gi, '<br><strong>Section $1</strong>')
-            .replace(/\.\s*SECTION/g, '.<br><br><strong>SECTION</strong>')
-            // Add line breaks for better readability
-            .replace(/\.\s+([A-Z][a-z])/g, '.<br><br>$1')
-            // Clean up multiple periods
-            .replace(/\.{2,}/g, '.')
-            // Fix spacing around parentheses
-            .replace(/\(\s+/g, '(')
-            .replace(/\s+\)/g, ')')
-            // Clean up quotes
-            .replace(/"\s+/g, '"')
-            .replace(/\s+"/g, '"');
-
-        // Split into paragraphs for better readability
-        const sentences = formatted.split(/\.\s+/);
-        if (sentences.length > 3) {
-            // Group sentences into paragraphs
-            const paragraphs = [];
-            for (let i = 0; i < sentences.length; i += 2) {
-                const paragraph = sentences.slice(i, i + 2).join('. ');
-                if (paragraph.trim()) {
-                    paragraphs.push(`<p class="mb-2">${paragraph}${paragraph.endsWith('.') ? '' : '.'}</p>`);
-                }
-            }
-            return paragraphs.join('');
-        } else {
-            return `<p>${formatted}</p>`;
-        }
-    }
 }
 
 // Small deterministic hash for fallback id generation

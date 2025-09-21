@@ -12,52 +12,40 @@
     <!-- Skip to main content link for keyboard accessibility -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
-    <div id="app">
-        <!-- Navigation Header with AWARE TEXAS Branding -->
-        <header class="navigation-header">
-            <div class="nav-container">
-                <div class="nav-brand">
-                    <span class="texas-flag-icon"></span>
-                    <span class="brand-text">AWARE TEXAS</span>
-                </div>
-
-                <!-- Desktop Navigation -->
-                <nav class="nav-links">
-                    <a href="#" class="nav-link">Home</a>
-                    <a href="#" class="nav-link">About Us</a>
-                </nav>
-
-                <!-- Mobile Navigation Button -->
-                <button class="mobile-nav-button" id="mobile-nav-toggle" aria-label="Toggle navigation menu"
-                    aria-expanded="false" aria-controls="mobile-nav-menu">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Mobile Navigation Menu -->
-            <div class="mobile-nav-menu hidden" id="mobile-nav-menu" aria-hidden="true">
-                <nav class="mobile-nav-links" role="navigation" aria-label="Mobile navigation">
-                    <a href="#" class="mobile-nav-link">Home</a>
-                    <a href="#" class="mobile-nav-link">About Us</a>
-                </nav>
-            </div>
-        </header>
+    <div id="app" class="snap-container">
+        <!-- Section Navigation Indicators -->
+        <nav class="section-nav-indicators" role="navigation" aria-label="Section navigation">
+            <ul class="nav-dots-list" role="list">
+                <li role="listitem">
+                    <button class="nav-dot active" data-section="0" 
+                            aria-label="Go to Hero section" 
+                            aria-current="true"
+                            title="Hero - AWARE TEXAS">
+                        <span class="sr-only">Hero section</span>
+                    </button>
+                </li>
+                <li role="listitem">
+                    <button class="nav-dot" data-section="1" 
+                            aria-label="Go to Search Bills section"
+                            title="Search Bills">
+                        <span class="sr-only">Search Bills section</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
 
         <!-- Hero Section with Header Image -->
-        <section class="hero-section" role="banner" aria-labelledby="hero-image">
-            <div class="hero-content hero-smooth-load">
-                <div class="hero-branding hero-brand-load">
+        <section class="snap-section hero-section" role="banner" aria-labelledby="hero-image">
+            <div class="hero-content">
+                <div class="hero-branding max-w-full">
                     <img id="hero-image" src="landing.svg" alt="AWARE TEXAS - Creating a More Informed Texas"
                         class="hero-header-image" role="img" />
                 </div>
             </div>
         </section>
 
-        <!-- Dark Blue Search Section -->
-        <section class="search-section section-animate-in" role="search" aria-labelledby="search-heading"
+        <!-- Fullscreen Search Section -->
+        <section class="snap-section search-section" role="search" aria-labelledby="search-heading"
             aria-describedby="search-description">
             <div class="search-container">
                 <h2 id="search-heading" class="search-heading">SEARCH BILLS</h2>
@@ -173,59 +161,59 @@
                             </div>
                         </div>
                     </div>
+
+                <!-- Main Content Area within Search Section -->
+                <main id="main-content" class="search-results-container flex-1 overflow-y-auto" role="main"
+                    aria-labelledby="main-content-label">
+                    <div class="search-container">
+                        <h2 id="main-content-label" class="sr-only">Texas Senate Bills Search Results</h2>
+
+                        <!-- Loading State with Texas Theme -->
+                        <div id="loading" class="text-center py-12 section-animate-in" role="status" aria-live="polite"
+                            aria-label="Loading bills">
+                            <div
+                                class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-texas-blue bg-white">
+                                <div class="loading-spinner-texas -ml-1 mr-3" aria-hidden="true"></div>
+                                Loading bills...
+                            </div>
+                        </div>
+
+                        <!-- Results Summary -->
+                        <div id="results-summary" class="mb-4 hidden" role="status" aria-live="polite" aria-atomic="true">
+                            <p class="text-sm text-gray-200" id="results-text">
+                                Showing <span id="results-count">0</span> bills
+                                <span id="filter-summary" class="hidden"> matching your filters</span>
+                            </p>
+                        </div>
+
+                        <!-- Enhanced Responsive Bill List -->
+                        <div id="bill-grid" class="space-y-3 hidden" role="region" aria-labelledby="bills-region-label"
+                            aria-live="polite">
+                            <h3 id="bills-region-label" class="sr-only">Search Results - Texas Senate Bills</h3>
+                            <!-- Bill rows will be dynamically inserted here -->
+                        </div>
+
+                        <!-- Show More Button -->
+                        <div class="text-center mt-12 mb-8">
+                            <button id="show-more-button"
+                                class="btn-texas-primary px-8 py-3 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                                style="display: none;" aria-label="Load more bills">
+                                Show More Bills
+                            </button>
+                        </div>
+
+                        <!-- No Results State -->
+                        <div id="no-results" class="text-center py-12 hidden" role="status" aria-live="polite">
+                            <div class="max-w-md mx-auto">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
         </section>
 
-        <main id="main-content" class="container-responsive py-responsive" role="main"
-            aria-labelledby="main-content-label">
-            <h2 id="main-content-label" class="sr-only">Texas Senate Bills Search Results</h2>
 
-            <!-- Loading State with Texas Theme -->
-            <div id="loading" class="text-center py-12 section-animate-in" role="status" aria-live="polite"
-                aria-label="Loading bills">
-                <div
-                    class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-texas-blue bg-white">
-                    <div class="loading-spinner-texas -ml-1 mr-3" aria-hidden="true"></div>
-                    Loading bills...
-                </div>
-            </div>
-
-            <!-- Results Summary -->
-            <div id="results-summary" class="mb-4 hidden" role="status" aria-live="polite" aria-atomic="true">
-                <p class="text-sm text-gray-600" id="results-text">
-                    Showing <span id="results-count">0</span> bills
-                    <span id="filter-summary" class="hidden"> matching your filters</span>
-                </p>
-            </div>
-
-            <!-- Enhanced Responsive Bill List -->
-            <div id="bill-grid" class="space-y-3 hidden" role="region" aria-labelledby="bills-region-label"
-                aria-live="polite">
-                <h3 id="bills-region-label" class="sr-only">Search Results - Texas Senate Bills</h3>
-                <!-- Bill rows will be dynamically inserted here -->
-            </div>
-
-            <!-- Show More Button -->
-            <div class="text-center mt-12 mb-8"></div>
-            <button id="show-more-button"
-                class="btn-texas-primary px-8 py-3 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-                style="display: none;" aria-label="Load more bills">
-                Show More Bills
-            </button>
-    </div>
-
-    <!-- No Results State -->
-    <div id="no-results" class="text-center py-12 hidden" role="status" aria-live="polite">
-        <div class="max-w-md mx-auto">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No bills found</h3>
-            <p class="mt-1 text-sm text-gray-500">Try adjusting your search or filter criteria.</p>
-        </div>
-    </div>
-    </main>
     </div>
 
     <!-- Error handling and performance optimization scripts -->
@@ -235,6 +223,9 @@
     <script src="js/api-optimizer.js"></script>
     <script src="js/performance-monitor.js"></script>
     <script src="js/accessibility-checker.js"></script>
+    <script src="js/scroll-snap-manager.js"></script>
+    <script src="js/section-scroller.js"></script>
+    <script src="js/section-navigation.js"></script>
     <script src="js/app.js"></script>
 </body>
 

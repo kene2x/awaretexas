@@ -25,7 +25,7 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
     const { search, status, sponsor, topic, limit = 100 } = req.query;
     
     // Get bills from database
-    const bills = await billDatabase.getAllBills(parseInt(limit));
+    let bills = await billDatabase.getAllBills(parseInt(limit));
     
     // Apply filters
     if (status) {
@@ -34,7 +34,7 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
     
     if (sponsor) {
       bills = bills.filter(bill => 
-        bill.sponsors.some(s => s.name.toLowerCase().includes(sponsor.toLowerCase()))
+        bill.sponsors && bill.sponsors.some(s => s.name.toLowerCase().includes(sponsor.toLowerCase()))
       );
     }
     
@@ -48,8 +48,8 @@ router.get('/', cacheMiddleware.middleware(600), asyncHandler(async (req, res) =
     if (search) {
       const searchLower = search.toLowerCase();
       bills = bills.filter(bill => 
-        bill.shortTitle.toLowerCase().includes(searchLower) ||
-        bill.fullTitle.toLowerCase().includes(searchLower) ||
+        (bill.shortTitle && bill.shortTitle.toLowerCase().includes(searchLower)) ||
+        (bill.fullTitle && bill.fullTitle.toLowerCase().includes(searchLower)) ||
         (bill.abstract && bill.abstract.toLowerCase().includes(searchLower))
       );
     }

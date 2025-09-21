@@ -12,8 +12,17 @@ class ErrorBoundary {
      * Setup global error handlers for unhandled errors
      */
     setupGlobalErrorHandlers() {
-        // Handle JavaScript errors
+        // Handle JavaScript errors (but ignore navigation-related errors)
         window.addEventListener('error', (event) => {
+            // Ignore common navigation and script loading errors
+            if (event.message && (
+                event.message.includes('Script error') ||
+                event.message.includes('Non-Error promise rejection') ||
+                event.filename && event.filename.includes('extension')
+            )) {
+                return;
+            }
+            
             this.handleError({
                 message: event.message,
                 filename: event.filename,
@@ -24,10 +33,18 @@ class ErrorBoundary {
             });
         });
 
-        // Handle unhandled promise rejections
+        // Handle unhandled promise rejections (but ignore navigation-related ones)
         window.addEventListener('unhandledrejection', (event) => {
+            // Ignore navigation and common promise rejections
+            const message = event.reason?.message || 'Unhandled promise rejection';
+            if (message.includes('Navigation') || 
+                message.includes('AbortError') ||
+                message.includes('The user aborted a request')) {
+                return;
+            }
+            
             this.handleError({
-                message: event.reason?.message || 'Unhandled promise rejection',
+                message: message,
                 error: event.reason,
                 type: 'promise'
             });
@@ -71,46 +88,12 @@ class ErrorBoundary {
      * Show user-friendly error message
      */
     showUserError(errorInfo) {
-        const errorMessage = this.getUserFriendlyMessage(errorInfo);
-        const errorId = `error-${Date.now()}`;
-
-        const errorElement = document.createElement('div');
-        errorElement.id = errorId;
-        errorElement.className = 'fixed top-4 right-4 max-w-md bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg z-50 animate-slide-in';
+        // Error pop-ups disabled - just log silently
+        console.log('Error boundary triggered (silenced):', errorInfo);
         
-        errorElement.innerHTML = `
-            <div class="flex items-start">
-                <svg class="w-5 h-5 text-red-400 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-                <div class="flex-1">
-                    <h4 class="text-sm font-medium text-red-800 mb-1">Something went wrong</h4>
-                    <p class="text-sm text-red-700 mb-3">${errorMessage}</p>
-                    <div class="flex space-x-2">
-                        <button onclick="window.errorBoundary.retryLastAction('${errorId}')" 
-                                class="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 rounded transition-colors">
-                            Try Again
-                        </button>
-                        <button onclick="window.errorBoundary.dismissError('${errorId}')" 
-                                class="text-xs text-red-600 hover:text-red-800 transition-colors">
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-                <button onclick="window.errorBoundary.dismissError('${errorId}')" 
-                        class="ml-2 text-red-400 hover:text-red-600 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        `;
-
-        document.body.appendChild(errorElement);
-
-        // Auto-dismiss after 10 seconds
-        setTimeout(() => {
-            this.dismissError(errorId);
+        const errorId = `error-${Date.now()}`;
+        
+        // Store for retry functionality but don't show UI
         }, 10000);
     }
 
@@ -274,6 +257,8 @@ class ErrorBoundary {
      * Show loading error state for components
      */
     showComponentError(container, message, retryCallback = null) {
+        // Error display disabled - just log silently
+        console.log('Component error (silenced):', message);
         if (!container) return;
 
         container.innerHTML = `

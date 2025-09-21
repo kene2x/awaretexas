@@ -90,7 +90,7 @@ class TexasLegislatureScraper {
                   const billNumber = `SB ${billMatch[1]}`;
                   
                   // Extract bill information from the table structure
-                  const billData = await this.parseBillTable($table, billNumber);
+                  const billData = await this.parseBillTable($table, billNumber, $);
                   
                   if (billData && this.validateBillData(billData)) {
                     bills.push(billData);
@@ -112,10 +112,22 @@ class TexasLegislatureScraper {
             
             console.log(`Successfully scraped ${bills.length} Senate bills from report`);
             
-            // Store successful result as fallback
-            fallbackManager.setFallback('bills-list', bills);
+            // Sort bills by most recent first and limit to 50
+            const sortedBills = bills.sort((a, b) => {
+              // Sort by lastActionDate first, then filedDate, then lastUpdated
+              const dateA = new Date(a.lastActionDate || a.filedDate || a.lastUpdated || 0);
+              const dateB = new Date(b.lastActionDate || b.filedDate || b.lastUpdated || 0);
+              return dateB - dateA; // Most recent first
+            });
             
-            return bills;
+            // Limit to 50 most recent bills
+            const recentBills = sortedBills.slice(0, 50);
+            console.log(`Limited to ${recentBills.length} most recent bills`);
+            
+            // Store successful result as fallback
+            fallbackManager.setFallback('bills-list', recentBills);
+            
+            return recentBills;
             
           } catch (axiosError) {
             clearTimeout(timeoutId);
@@ -163,9 +175,10 @@ class TexasLegislatureScraper {
    * Parse bill information from a table element
    * @param {Object} $table - Cheerio table element
    * @param {string} billNumber - Bill number (e.g., "SB 1")
+   * @param {Object} $ - Cheerio instance
    * @returns {Object|null} Bill data object or null if parsing fails
    */
-  async parseBillTable($table, billNumber) {
+  async parseBillTable($table, billNumber, $) {
     try {
       const tableText = $table.text();
       
@@ -213,9 +226,9 @@ class TexasLegislatureScraper {
         fullTitle: caption || `${displayBillNumber} - Title not available`,
         status: status,
         sponsors: sponsorsList,
-        officialUrl: `https://capitol.texas.gov/BillLookup/History.aspx?LegSess=88R&Bill=${standardizedBillNumber}`,
+        officialUrl: `https://capitol.texas.gov/BillLookup/History.aspx?LegSess=89R&Bill=${standardizedBillNumber}`,
         billText: '',
-        abstract: caption || '',
+        abstract: '', // Will be populated from Caption Text field
         committee: this.extractCommittee(tableText),
         coSponsors: sponsors.slice(0, 5).map(name => name.trim()).filter(name => name.length > 0),
         filedDate: filedDate,
@@ -235,12 +248,14 @@ class TexasLegislatureScraper {
           console.log(`✅ Successfully fetched bill text for ${displayBillNumber} (${textResult.billText.length} characters)`);
         }
         
-        if (textResult.summary && textResult.summary.length > 50) {
-          // Use the official summary if it's more substantial than the caption
-          if (textResult.summary.length > (billData.abstract || '').length) {
-            billData.abstract = textResult.summary;
-            console.log(`✅ Successfully fetched official summary for ${displayBillNumber} (${textResult.summary.length} characters)`);
-          }
+        if (textResult.summary && textResult.summary.length > 20) {
+          // Use the Caption Text as the abstract
+          billData.abstract = textResult.summary;
+          console.log(`✅ Successfully fetched Caption Text for ${displayBillNumber} (${textResult.summary.length} characters)`);
+        } else if (caption && caption.length > 20) {
+          // Fallback to caption from table if Caption Text not found
+          billData.abstract = caption;
+          console.log(`⚠️ Using table caption as fallback for ${displayBillNumber}`);
         }
         
         if (!textResult.billText && !textResult.summary) {
@@ -436,66 +451,140 @@ class TexasLegislatureScraper {
   async fetchBillTextFromTextPage(billNumber) {
     try {
       // Try different session numbers
-      const sessions = ['892', '891', '881', '871'];
+      const sessions = ['89R', '88R', '87R', '86R'];
       
       for (const session of sessions) {
         const result = { billText: '', summary: '' };
         
-        // Fetch summary from BillSummary.aspx
+        // First, try to get Caption Text from History.aspx page
         try {
-          const summaryUrl = `https://capitol.texas.gov/BillLookup/BillSummary.aspx?LegSess=${session}&Bill=${billNumber}`;
-          console.log(`🔗 Trying Summary URL: ${summaryUrl}`);
+          const historyUrl = `https://capitol.texas.gov/BillLookup/History.aspx?LegSess=${session}&Bill=${billNumber}`;
+          console.log(`🔗 Trying History URL for Caption Text: ${historyUrl}`);
           
-          const summaryResponse = await axios.get(summaryUrl, {
+          const historyResponse = await axios.get(historyUrl, {
             timeout: 10000,
             headers: {
               'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
             }
           });
           
-          if (summaryResponse.status === 200 && summaryResponse.data) {
-            const $ = cheerio.load(summaryResponse.data);
+          if (historyResponse.status === 200 && historyResponse.data) {
+            const $ = cheerio.load(historyResponse.data);
             
-            // Remove navigation elements
-            $('nav, header, footer, .navigation, .header, .footer, script, style').remove();
-            
-            // Look for summary content
-            const summarySelectors = [
-              '#BillSummary',
-              '.summary',
-              'div[id*="summary"]',
-              'div[class*="summary"]',
-              'table td', // Summary is often in table cells
-              '.content',
-              'main'
+            // Look for Caption Text field specifically
+            const captionTextSelectors = [
+              'span[id*="Caption"]',
+              'td:contains("Caption Text") + td',
+              'td:contains("Caption:") + td',
+              'label:contains("Caption") + span',
+              'label:contains("Caption Text") + span',
+              '.caption-text',
+              '#CaptionText'
             ];
             
-            for (const selector of summarySelectors) {
+            for (const selector of captionTextSelectors) {
               const element = $(selector);
               if (element.length > 0) {
-                let text = element.text().trim();
+                let captionText = element.text().trim();
                 
-                // Filter out navigation text
-                if (text.length > 50 && 
-                    !text.includes('Help | FAQ') &&
-                    !text.includes('Site Map') &&
-                    !text.includes('Login') &&
-                    text.length > result.summary.length) {
+                // Clean up caption text
+                if (captionText.length > 20 && 
+                    !captionText.includes('Help | FAQ') &&
+                    !captionText.includes('Site Map') &&
+                    captionText.length > result.summary.length) {
                   
-                  // Clean up summary text
-                  text = text
-                    .replace(/^SUMMARY:?\s*/i, '')
+                  captionText = captionText
+                    .replace(/^Caption:?\s*/i, '')
                     .replace(/\s+/g, ' ')
-                    .replace(/\n\s*\n/g, '\n')
                     .trim();
                   
-                  result.summary = text;
+                  result.summary = captionText;
+                  console.log(`✅ Found Caption Text for ${billNumber}: ${captionText.substring(0, 100)}...`);
+                  break;
                 }
               }
             }
+            
+            // If no specific Caption Text found, look for it in table structure
+            if (!result.summary) {
+              $('table tr').each((i, row) => {
+                const $row = $(row);
+                const rowText = $row.text();
+                if (rowText.toLowerCase().includes('caption')) {
+                  const cells = $row.find('td');
+                  if (cells.length >= 2) {
+                    const captionText = cells.eq(1).text().trim();
+                    if (captionText.length > 20) {
+                      result.summary = captionText;
+                      console.log(`✅ Found Caption Text in table for ${billNumber}: ${captionText.substring(0, 100)}...`);
+                      return false; // Break out of each loop
+                    }
+                  }
+                }
+              });
+            }
           }
-        } catch (summaryError) {
-          console.log(`Summary not found for ${billNumber} in session ${session}`);
+        } catch (historyError) {
+          console.log(`Caption Text not found for ${billNumber} in session ${session}`);
+        }
+        
+        // Fetch summary from BillSummary.aspx as fallback
+        if (!result.summary) {
+          try {
+            const summaryUrl = `https://capitol.texas.gov/BillLookup/BillSummary.aspx?LegSess=${session}&Bill=${billNumber}`;
+            console.log(`🔗 Trying Summary URL: ${summaryUrl}`);
+            
+            const summaryResponse = await axios.get(summaryUrl, {
+              timeout: 10000,
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (compatible; TexasBillTracker/1.0)'
+              }
+            });
+            
+            if (summaryResponse.status === 200 && summaryResponse.data) {
+              const $ = cheerio.load(summaryResponse.data);
+              
+              // Remove navigation elements
+              $('nav, header, footer, .navigation, .header, .footer, script, style').remove();
+              
+              // Look for summary content
+              const summarySelectors = [
+                '#BillSummary',
+                '.summary',
+                'div[id*="summary"]',
+                'div[class*="summary"]',
+                'table td', // Summary is often in table cells
+                '.content',
+                'main'
+              ];
+              
+              for (const selector of summarySelectors) {
+                const element = $(selector);
+                if (element.length > 0) {
+                  let text = element.text().trim();
+                  
+                  // Filter out navigation text
+                  if (text.length > 50 && 
+                      !text.includes('Help | FAQ') &&
+                      !text.includes('Site Map') &&
+                      !text.includes('Login') &&
+                      text.length > result.summary.length) {
+                    
+                    // Clean up summary text
+                    text = text
+                      .replace(/^SUMMARY:?\s*/i, '')
+                      .replace(/\s+/g, ' ')
+                      .replace(/\n\s*\n/g, '\n')
+                      .trim();
+                    
+                    result.summary = text;
+                  }
+                }
+              }
+            }
+          } catch (summaryError) {
+            console.log(`Summary not found for ${billNumber} in session ${session}`);
+          }
         }
         
         // Fetch bill text from direct HTML document
