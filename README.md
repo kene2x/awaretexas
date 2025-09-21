@@ -1,4 +1,4 @@
-# Texas Senate Bill Tracker
+# AwareTexas
 
 ## Inspiration
 
@@ -6,7 +6,7 @@ With complex legislation affecting every aspect of Texans' daily lives, many cit
 
 ## What it does
 
-The Texas Senate Bill Tracker bridges the knowledge gap by providing easy access to comprehensive legislative information from the Texas Legislature. Our platform empowers citizens to stay informed about state legislation through real-time bill tracking, intelligent search capabilities, and AI-powered summaries. Users can search for bills by topic, sponsor, or keywords, view detailed legislative histories including all bill stages from filing to enactment, and access content tailored to different reading levels to ensure legislative information is accessible to all Texans regardless of educational background.
+The AwareTexas bridges the knowledge gap by providing easy access to comprehensive legislative information from the Texas Legislature. Our platform empowers citizens to stay informed about state legislation through real-time bill tracking, intelligent search capabilities, and AI-powered summaries. Users can search for bills by topic, sponsor, or keywords, view detailed legislative histories including all bill stages from filing to enactment, and access content tailored to different reading levels to ensure legislative information is accessible to all Texans regardless of educational background.
 
 ## How we built it
 
@@ -36,7 +36,7 @@ During the development of this project, we learned the intricacies of government
 
 We discovered the power of AI in democratizing access to complex information, learning how to leverage Google's Gemini API to transform dense legislative language into clear, actionable summaries. Most importantly, we learned the value of open government data and technology in strengthening democratic participation and civic engagement.
 
-## What's next for Texas Senate Bill Tracker
+## What's next for AwareTexas
 
 For future development, we plan to expand beyond the Texas Senate to include House bills, providing complete coverage of Texas legislative activity. We aim to add real-time notifications for bill status changes, allowing citizens to follow specific legislation that matters to them.
 
